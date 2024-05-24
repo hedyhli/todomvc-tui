@@ -15,6 +15,8 @@ const ModCtrl = gocui.Modifier(4)
 var cPlaceholder = color.HEX("#bbbbbb").C256()
 var cSelectedBg = color.HEX("#555555", true).C256()
 
+var g *gocui.Gui
+
 var marginLeft = 20
 
 type box struct {
@@ -56,7 +58,8 @@ func must[T any](v T, err error) T {
 }
 
 func main() {
-	g, err := gocui.NewGui(gocui.Output256)
+	var err error
+	g, err = gocui.NewGui(gocui.Output256)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -223,6 +226,7 @@ func Todolist(g *gocui.Gui) (*gocui.View, error) {
 		if err != gocui.ErrUnknownView {
 			return nil, err
 		}
+		v.Autoscroll = true
 		return v, todolistRedraw(g, v, false)
 	}
 	return v, nil
@@ -301,6 +305,56 @@ func newtodoReset(g *gocui.Gui, v *gocui.View, placeholder bool) error {
 	return nil
 }
 
+func newtodoEditor (v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
+	todolist := must(g.View("todolist"))
+	fmt.Fprintln(todolist, key, ch, mod)
+
+	switch {
+	case ch != 0 && mod == 0:
+		if emptyNewtodo {
+			newtodoReset(g, v, false)
+			emptyNewtodo = false
+		}
+		v.EditWrite(ch)
+	case key == gocui.KeySpace:
+		if !emptyNewtodo {
+			v.EditWrite(' ')
+		}
+	case key == gocui.KeyEnter:
+		if !emptyNewtodo {
+			items = append(items, item{name: v.BufferLines()[1], complete: false})
+			todolistRedraw(g, todolist, false)
+			newtodoReset(g, v, true)
+		}
+
+	case key == gocui.KeyBackspace:
+		v.EditDelete(false)
+	case key == gocui.KeyBackspace2:
+		x, _ := v.Cursor()
+		if (x > 1) {
+			v.EditDelete(true)
+		}
+
+	case key == gocui.KeyArrowLeft:
+		x, _ := v.Cursor()
+		if (x > 1) {
+			v.MoveCursor(-1, 0, false)
+		}
+	case key == gocui.KeyArrowRight:
+		v.MoveCursor(1, 0, false)
+
+	case key == gocui.KeyCtrlA:
+		if err := v.SetCursor(1, 1); err != nil {
+			log.Fatalln(err.Error())
+		}
+	case key == gocui.KeyCtrlE:
+		x := len(v.BufferLines()[1])
+		if err := v.SetCursor(x, 1); err != nil {
+			log.Fatalln(err.Error())
+		}
+	}
+}
+
 // Initialize newtodo component
 func NewTodo(g *gocui.Gui, todolist *gocui.View) error {
 	maxX, _ := g.Size()
@@ -321,52 +375,7 @@ func NewTodo(g *gocui.Gui, todolist *gocui.View) error {
 		g.SetCurrentView("newtodo")
 
 		v.Editable = true
-		v.Editor = gocui.EditorFunc(func (v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
-			switch {
-			case ch != 0 && mod == 0:
-				if emptyNewtodo {
-					newtodoReset(g, v, false)
-					emptyNewtodo = false
-				}
-				v.EditWrite(ch)
-			case key == gocui.KeySpace:
-				if !emptyNewtodo {
-					v.EditWrite(' ')
-				}
-			case key == gocui.KeyEnter:
-				if !emptyNewtodo {
-					items = append(items, item{name: v.BufferLines()[1], complete: false})
-					todolistRedraw(g, todolist, false)
-					newtodoReset(g, v, true)
-				}
-
-			case key == gocui.KeyBackspace:
-				v.EditDelete(false)
-			case key == gocui.KeyBackspace2:
-				x, _ := v.Cursor()
-				if (x > 1) {
-					v.EditDelete(true)
-				}
-
-			case key == gocui.KeyArrowLeft:
-				x, _ := v.Cursor()
-				if (x > 1) {
-					v.MoveCursor(-1, 0, false)
-				}
-			case key == gocui.KeyArrowRight:
-				v.MoveCursor(1, 0, false)
-
-			case key == gocui.KeyCtrlA:
-				if err := v.SetCursor(1, 1); err != nil {
-					log.Fatalln(err.Error())
-				}
-			case key == gocui.KeyCtrlE:
-				x := len(v.BufferLines()[1])
-				if err := v.SetCursor(x, 1); err != nil {
-					log.Fatalln(err.Error())
-				}
-			}
-		})
+		v.Editor = gocui.EditorFunc(newtodoEditor)
 	}
 	return nil
 }
