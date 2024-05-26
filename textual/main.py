@@ -29,6 +29,7 @@ class Todo:
 
 
 class TodoList(ListView):
+    """A list view of labels"""
     todos: list[Todo]
 
     def key_space(self):
@@ -65,6 +66,7 @@ def format_itemsleft(todos: list[Todo]) -> str:
 
 
 class EditModal(ModalScreen):
+    """Returns input value of new name, empty string if cancelled."""
     value: str
 
     def __init__(self, value: str):
