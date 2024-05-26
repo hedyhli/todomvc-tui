@@ -47,7 +47,7 @@ Everything should be in a single file unless *absolutely necessary*.
 ### UX
 
 - Keys to navigate
-- Keys to toggle copmlete
+- Keys to toggle complete
 - `e` to edit
 - optionally key to delete
 - Mouse to switch focus
