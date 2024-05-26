@@ -8,14 +8,14 @@
 - Rust
   - ratatui
 - Lua
-  - ltui
-  - notcurses?
-- Nim
-- C
+  - (planned) ltui
+  - (planned) notcurses?
+- (planned) Nim
+- (planned) C
 - Python
   - [x] Textual
-  - Curses
-- Some lisps
+  - (planned) Curses
+- (planned) Some lisps
 
 ## Spec
 
