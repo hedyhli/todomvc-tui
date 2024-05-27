@@ -1,16 +1,16 @@
 use crossterm::{
-    event::{self, KeyCode, KeyEvent, Event, KeyEventKind, KeyModifiers},
-    terminal::{
-        disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use ratatui::{
-    prelude::{CrosstermBackend, Stylize, Terminal, Rect, Line, Frame},
+    prelude::{CrosstermBackend, Frame, Line, Rect, Stylize, Terminal},
     widgets::Paragraph,
 };
-use std::{io::{stdout, Result, Stdout}, format};
+use std::{
+    format,
+    io::{stdout, Result, Stdout},
+};
 
 type Tui = Terminal<CrosstermBackend<Stdout>>;
 
@@ -39,9 +39,7 @@ impl App {
             // Rather than event::poll, this blocks until there is an event.
             // Avoids redrawing the terminal constantly.
             match event::read()? {
-                Event::Key(key_event) => {
-                    self.handle_key(key_event)
-                }
+                Event::Key(key_event) => self.handle_key(key_event),
                 _ => {}
             };
         }
