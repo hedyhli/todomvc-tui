@@ -195,7 +195,6 @@ impl App {
                         .alignment(Alignment::Center);
 
         while !self.exit {
-            // Cursor position in input
             terminal.draw(|frame| {
                 let full = frame.size();
                 let right =  full.width - margin_side - margin_side;
@@ -210,6 +209,7 @@ impl App {
                     Rect::new(margin_side, 9, right, 3)
                 );
                 if self.focus == Focus::Input {
+                    // Cursor position in input
                     frame.set_cursor(margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(), 10);
                 }
 
