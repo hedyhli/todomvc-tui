@@ -218,7 +218,7 @@ impl App {
                     .block(Block::bordered()
                            .border_type(BorderType::Rounded))
                     .highlight_style(
-                        Style::default().white().bg(Color::Rgb(100, 100, 100))
+                        Style::default().white().bg(Color::Rgb(65, 70, 80))
                     );
 
                 frame.render_stateful_widget(
@@ -308,13 +308,17 @@ impl App {
             }
             if key.code == KeyCode::Down {
                 if let Some(sel) = state.selected() {
-                    state.select(Some((sel + 1) % len));
+                    if sel + 1 != len {
+                        state.select(Some(sel + 1));
+                    }
                 } else {
                     state.select(Some(0));
                 }
             } else if key.code == KeyCode::Up {
                 if let Some(sel) = state.selected() {
-                    state.select(Some(if sel == 0 { len - 1 } else { sel - 1 }));
+                    if sel != 0 {
+                        state.select(Some(sel - 1));
+                    }
                 } else {
                     state.select(Some(len - 1));
                 }
