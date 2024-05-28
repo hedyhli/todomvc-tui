@@ -4,12 +4,11 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{
-    prelude::{CrosstermBackend, Line, Rect, Stylize, Terminal, Style, Modifier, Alignment},
-    widgets::{Block, Paragraph, List, ListState, BorderType, Borders, Padding},
+    prelude::{CrosstermBackend, Rect, Stylize, Terminal, Style, Alignment, Color},
+    widgets::{Block, Paragraph, List, ListState, BorderType, Padding},
 };
 use std::{
-    format,
-    io::{stdout, Result, Stdout},
+    format, io::{stdout, Result, Stdout}
 };
 
 // TUI ////////////////////////////////////////////////////////////////
@@ -76,10 +75,83 @@ impl Todo {
     }
     
     fn fmt_item(&self) -> String {
-        (if self.complete { "(X) " } else { "( ) " }).to_string() + &self.name
+        (if self.complete { " (X) " } else { " ( ) " }).to_string() + &self.name
     }
 }
 
+
+// Input //////////////////////////////////////////////////////////////
+#[derive(Debug)]
+struct Inputter {
+    input: String,
+    cursor: usize,
+}
+
+impl Inputter {
+    fn new() -> Self {
+        Self {
+            input: String::new(),
+            cursor: 0,
+        }
+    }
+
+    fn byte_index(&self) -> usize {
+        self.input
+            .char_indices()
+            .map(|(i, _)| i)
+            .nth(self.cursor)
+            .unwrap_or(self.input.len())
+    }
+
+    fn clamp(&mut self, idx: usize) -> usize {
+        idx.clamp(0, self.input.chars().count())
+    }
+
+    fn right(&mut self) {
+        self.cursor = self.clamp(self.cursor + 1);
+    }
+
+    fn left(&mut self) {
+        self.cursor = self.clamp(self.cursor - 1);
+    }
+
+    fn reset(&mut self) {
+        self.cursor = 0;
+        self.input.clear();
+    }
+
+    fn insert(&mut self, c: char) {
+        let index = self.byte_index();
+        self.input.insert(index, c);
+        self.right();
+    }
+
+    fn delete(&mut self, right: bool) {
+        if !right {
+            if self.cursor == 0 {
+                return;
+            }
+            let cur = self.cursor;
+            // 0 1 2 3 |4| 5 6
+            // 0 1 2   |4| 5 6
+            let before = self.input.chars().take(cur - 1);
+            let after = self.input.chars().skip(cur);
+
+            // Put all characters together except the selected one.
+            // By leaving the selected one out, it is forgotten and therefore deleted.
+            self.input = before.chain(after).collect();
+            self.left();
+        } else {
+            let cur = self.byte_index();
+            // 0 1 2 3 |4| 5 6
+            // 0 1 2 3 |   5 6
+            let before = self.input.chars().take(cur);
+            let after = self.input.chars().skip(cur + 1);
+
+            self.input = before.chain(after).collect();
+        }
+    }
+}
 
 // App ////////////////////////////////////////////////////////////////
 #[derive(Debug)]
@@ -88,6 +160,7 @@ struct App {
     todolist: Todos,
     focus: Focus,
     message: String,
+    inputter: Inputter,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -101,21 +174,15 @@ impl App {
     fn new() -> Self {
         Self {
             exit: false,
-            todolist: Vec::new(),
+            todolist: new_todolist(),
             focus: Focus::Input,
             message: "hello!".to_string(),
+            inputter: Inputter::new(),
         }
     }
 
     fn run(&mut self, terminal: &mut Tui) -> Result<()> {
-        self.focus = Focus::Input;
-        self.message = "hello!".to_string();
-
-        self.todolist = new_todolist();
-        self.todolist.push(new_todo("1".to_string()));
-        self.todolist.push(new_todo("2".to_string()));
-        self.todolist.push(new_todo("3".to_string()));
-        self.todolist.push(new_todo("4".to_string()));
+        terminal.show_cursor()?;
 
         let mut liststate = ListState::default();
 
@@ -125,41 +192,49 @@ impl App {
 
         let header = Paragraph::new("T O D O M V C")
                         .alignment(Alignment::Center);
-        let input = Block::new()
-                        .border_type(BorderType::Rounded)
-                        .borders(Borders::ALL)
-                        .padding(Padding::horizontal(1));
 
         while !self.exit {
+            // Cursor position in input
             terminal.draw(|frame| {
                 let full = frame.size();
-                let header_area = Rect::new(0, 5, full.width - 1, 1);
-                let input_area = Rect::new(
-                    margin_side,
-                    9,
-                    full.width - margin_side - margin_side,
-                    3
+                let right =  full.width - margin_side - margin_side;
+
+                frame.render_widget(&header, Rect::new(0, 5, full.width - 1, 1));
+                // Input
+                frame.render_widget(
+                    Paragraph::new(self.inputter.input.clone())
+                        .block(Block::bordered()
+                            .border_type(BorderType::Rounded)
+                            .padding(Padding::horizontal(1))),
+                    Rect::new(margin_side, 9, right, 3)
                 );
+                if self.focus == Focus::Input {
+                    frame.set_cursor(margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(), 10);
+                }
 
-                frame.render_widget(&header, header_area);
-                frame.render_widget(&input, input_area);
-
+                // Todolist
                 let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
                     .block(Block::bordered()
                            .border_type(BorderType::Rounded)
                            .padding(Padding::symmetric(3, 1)))
-                    .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-                    .repeat_highlight_symbol(true);
+                    .highlight_style(
+                        Style::default().white().bg(Color::Rgb(100, 100, 100))
+                    );
 
                 frame.render_stateful_widget(
                     &list,
                     Rect::new(
                         margin_side,
                         list_top,
-                        full.width - margin_side - margin_side,
+                        right,
                         full.height - list_top - list_bot
                     ),
                     &mut liststate
+                );
+
+                frame.render_widget(
+                    Paragraph::new(fmt_itemsleft(&self.todolist)).alignment(Alignment::Right),
+                    Rect::new(margin_side, full.height - list_bot, right, 1)
                 );
 
                 frame.render_widget(
@@ -180,6 +255,7 @@ impl App {
         if key.kind == KeyEventKind::Press {
             if key.code == KeyCode::Char('c') && key.modifiers == KeyModifiers::CONTROL {
                 self.exit = true;
+                return;
             } else if key.modifiers != KeyModifiers::NONE {
                 return;
             }
@@ -197,7 +273,33 @@ impl App {
 
             // Input
             if self.focus == Focus::Input {
-                self.message = "key while focus on input".to_string();
+                match key.code {
+                    KeyCode::Char(c) => {
+                        self.inputter.insert(c);
+                    }
+                    KeyCode::Left => {
+                        self.inputter.left();
+                    }
+                    KeyCode::Right => {
+                        self.inputter.right();
+                    }
+                    KeyCode::Backspace => {
+                        self.inputter.delete(false);
+                    }
+                    KeyCode::Delete => {
+                        self.inputter.delete(true);
+                    }
+                    KeyCode::Enter => {
+                        let name = self.inputter.input.clone();
+                        self.todolist.push(new_todo(name));
+                        self.inputter.reset();
+                        if self.todolist.len() == 1 {
+                            state.select(Some(0));
+                        }
+                    }
+                    _ => {}
+                }
+
                 return;
             }
 
