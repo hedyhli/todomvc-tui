@@ -75,7 +75,8 @@ impl Todo {
     }
     
     fn fmt_item(&self) -> String {
-        (if self.complete { " (X) " } else { " ( ) " }).to_string() + &self.name
+        let middle = (if self.complete { "(X) " } else { "( ) " }).to_string() + &self.name;
+        format!("\n   {middle}\n\n")
     }
 }
 
@@ -215,8 +216,7 @@ impl App {
                 // Todolist
                 let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
                     .block(Block::bordered()
-                           .border_type(BorderType::Rounded)
-                           .padding(Padding::symmetric(3, 1)))
+                           .border_type(BorderType::Rounded))
                     .highlight_style(
                         Style::default().white().bg(Color::Rgb(100, 100, 100))
                     );
@@ -293,9 +293,7 @@ impl App {
                         let name = self.inputter.input.clone();
                         self.todolist.push(new_todo(name));
                         self.inputter.reset();
-                        if self.todolist.len() == 1 {
-                            state.select(Some(0));
-                        }
+                        state.select(Some(self.todolist.len() - 1));
                     }
                     _ => {}
                 }
