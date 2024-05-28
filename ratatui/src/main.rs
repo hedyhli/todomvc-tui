@@ -70,13 +70,6 @@ fn clear_completed(ts: Todos) -> Todos {
     new_items
 }
 
-fn show(ts: &Todos) {
-    for i in ts {
-        println!("- {}", i.fmt_item());
-    }
-    println!("{}", fmt_itemsleft(ts));
-}
-
 impl Todo {
     fn toggle(&mut self) {
         self.complete = !self.complete;
@@ -89,7 +82,7 @@ impl Todo {
 
 
 // App ////////////////////////////////////////////////////////////////
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct App {
     exit: bool,
     todolist: Todos,
@@ -105,6 +98,15 @@ enum Focus {
 }
 
 impl App {
+    fn new() -> Self {
+        Self {
+            exit: false,
+            todolist: Vec::new(),
+            focus: Focus::Input,
+            message: "hello!".to_string(),
+        }
+    }
+
     fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         self.focus = Focus::Input;
         self.message = "hello!".to_string();
@@ -116,13 +118,6 @@ impl App {
         self.todolist.push(new_todo("4".to_string()));
 
         let mut liststate = ListState::default();
-
-        let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
-            .block(Block::bordered()
-                   .border_type(BorderType::Rounded)
-                   .padding(Padding::symmetric(3, 1)))
-            .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-            .repeat_highlight_symbol(true);
 
         let margin_side = 30;
         let list_top = 12;
@@ -148,6 +143,13 @@ impl App {
 
                 frame.render_widget(&header, header_area);
                 frame.render_widget(&input, input_area);
+
+                let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
+                    .block(Block::bordered()
+                           .border_type(BorderType::Rounded)
+                           .padding(Padding::symmetric(3, 1)))
+                    .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
+                    .repeat_highlight_symbol(true);
 
                 frame.render_stateful_widget(
                     &list,
@@ -216,6 +218,13 @@ impl App {
                 } else {
                     state.select(Some(len - 1));
                 }
+            } else if key.code == KeyCode::Enter || key.code == KeyCode::Char(' ') {
+                if let Some(sel) = state.selected() {
+                    self.todolist[sel].toggle();
+                    self.message = "toggled".to_string();
+                } else {
+                    self.message = "tried to toggle without selection!".to_string();
+                }
             }
         }
     }
@@ -224,7 +233,7 @@ impl App {
 // main ///////////////////////////////////////////////////////////////
 fn main() -> Result<()> {
     let mut terminal = tui_init()?;
-    let app_result = App::default().run(&mut terminal);
+    let app_result = App::new().run(&mut terminal);
     tui_done()?;
     app_result
 }
