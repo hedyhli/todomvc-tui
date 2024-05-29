@@ -19,9 +19,10 @@
 
     fully featured except mouse support and a "proper" modal UI for editing
 
-  - (planned) cursive, possibly
+  - (maybe?) cursive, requires ncurses
+  - (planned) zi
 
-- ~~Zig~~, but as it stands right now the ecosystem is limited.
+- ~~Zig~~ as it stands right now the ecosystem is a little limited.
 
 - Lua (but written with Fennel, probably)
   - (planned) ltui
@@ -41,6 +42,7 @@
     these operations instead is boring and trivial.
 
   - (probably not) urwid, curses
+  - WIP: blessed
 
 - (planned) Some lisps, hopefully.
 
