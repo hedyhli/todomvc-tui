@@ -164,6 +164,7 @@ struct App {
     focus: Focus,
     inputter: Inputter,
     first_todo: bool,
+    editing: Option<usize>,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -181,6 +182,7 @@ impl App {
             focus: Focus::Input,
             inputter: Inputter::new(),
             first_todo: true,
+            editing: None,
         }
     }
 
@@ -218,12 +220,15 @@ impl App {
         let bindings_widget =
             Paragraph::new(Line::from(bindings_line)).alignment(Alignment::Center);
 
+        // Main loop
         while !self.exit {
             terminal.draw(|frame| {
                 let full = frame.size();
-                let right = full.width - margin_side - margin_side;
+                let width = full.width - margin_side - margin_side;
 
+                // Header
                 frame.render_widget(&header, Rect::new(0, 5, full.width - 1, 1));
+
                 // Input
                 frame.render_widget(
                     Paragraph::new(self.inputter.input.clone()).block(
@@ -232,9 +237,8 @@ impl App {
                             .padding(Padding::horizontal(1))
                             .border_style(self.focus_border(Focus::Input)),
                     ),
-                    Rect::new(margin_side, 9, right, 3),
+                    Rect::new(margin_side, 9, width, 3),
                 );
-
                 if self.focus == Focus::Input {
                     // Cursor position in input
                     frame.set_cursor(
@@ -261,19 +265,21 @@ impl App {
                     Rect::new(
                         margin_side,
                         list_top,
-                        right,
+                        width,
                         full.height - list_top - list_bot,
                     ),
                     &mut liststate,
                 );
 
+                // Itemsleft
                 frame.render_widget(
                     Paragraph::new(
                         if self.first_todo { String::new() } else { fmt_itemsleft(&self.todolist) }
                     ).alignment(Alignment::Right),
-                    Rect::new(margin_side, full.height - list_bot, right, 1),
+                    Rect::new(margin_side, full.height - list_bot, width, 1),
                 );
 
+                // Bindings hint
                 frame.render_widget(
                     &bindings_widget,
                     Rect::new(0, full.height - 1, full.width - 1, 1),
@@ -326,10 +332,26 @@ impl App {
                     }
                     KeyCode::Enter => {
                         let name = self.inputter.input.clone();
-                        self.todolist.push(Todo::new(name));
-                        self.inputter.reset();
-                        state.select(Some(self.todolist.len() - 1));
-                        self.first_todo = false
+                        if !name.is_empty() {
+                            if let Some(idx) = self.editing {
+                                // Finish editing
+                                self.todolist[idx].name = name;
+                                self.focus = Focus::List;
+                            } else {
+                                // New item
+                                self.todolist.push(Todo::new(name));
+                                state.select(Some(self.todolist.len() - 1));
+                                self.first_todo = false
+                            }
+
+                            self.inputter.reset();
+                        }
+                    }
+                    KeyCode::Esc => {
+                        if let Some(_) = self.editing {
+                            self.editing = None;
+                            self.focus = Focus::List;
+                        }
                     }
                     _ => {}
                 }
@@ -361,6 +383,14 @@ impl App {
             } else if key.code == KeyCode::Enter || key.code == KeyCode::Char(' ') {
                 if let Some(sel) = state.selected() {
                     self.todolist[sel].toggle();
+                } else {
+                }
+            } else if key.code == KeyCode::Char('e') {
+                if let Some(sel) = state.selected() {
+                    self.editing = Some(sel);
+                    self.inputter.input = self.todolist[sel].name.clone();
+                    self.inputter.cursor = self.inputter.input.chars().count();
+                    self.focus = Focus::Input;
                 } else {
                 }
             }
