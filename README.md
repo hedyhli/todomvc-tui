@@ -47,6 +47,7 @@
 - JS/TS
   - (planned) react-ink, probably.
   - (planned) solid-ink
+  - deno-tui
 
 - (planned) shell - bash or maybe even nushell.
 
