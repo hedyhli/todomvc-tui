@@ -1,4 +1,4 @@
-# TodoMVC on the TUI
+# TodoMVC in the terminal
 
 ![demo](./demo.png)
 
