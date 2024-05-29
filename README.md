@@ -1,3 +1,6 @@
+# TodoMVC on the TUI
+
+![demo](./demo.png)
 
 ## Status
 
