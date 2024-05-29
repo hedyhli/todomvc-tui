@@ -4,11 +4,12 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{
-    prelude::{CrosstermBackend, Rect, Stylize, Terminal, Style, Alignment, Color, Line},
-    widgets::{Block, Paragraph, List, ListState, BorderType, Padding},
+    prelude::{Alignment, Color, CrosstermBackend, Line, Rect, Style, Stylize, Terminal},
+    widgets::{Block, BorderType, List, ListState, Padding, Paragraph},
 };
 use std::{
-    format, io::{stdout, Result, Stdout}
+    format,
+    io::{stdout, Result, Stdout},
 };
 
 // TUI ////////////////////////////////////////////////////////////////
@@ -36,7 +37,10 @@ struct Todo {
 type Todos = Vec<Todo>;
 
 fn new_todo(name: String) -> Todo {
-    return Todo{ name, complete: false };
+    return Todo {
+        name,
+        complete: false,
+    };
 }
 
 fn new_todolist() -> Todos {
@@ -73,13 +77,12 @@ impl Todo {
     fn toggle(&mut self) {
         self.complete = !self.complete;
     }
-    
+
     fn fmt_item(&self) -> String {
         let middle = (if self.complete { "(X) " } else { "( ) " }).to_string() + &self.name;
         format!("\n   {middle}\n\n")
     }
 }
-
 
 // Input //////////////////////////////////////////////////////////////
 #[derive(Debug)]
@@ -197,8 +200,7 @@ impl App {
         let list_top = 12;
         let list_bot = 4;
 
-        let header = Paragraph::new("T O D O M V C")
-                        .alignment(Alignment::Center);
+        let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
 
         let bindings = [
             ("tab", "switch focus"),
@@ -212,38 +214,46 @@ impl App {
             bindings_line.push(": ".into());
             bindings_line.push(pair.1.into());
         }
-        let bindings_widget = Paragraph::new(Line::from(bindings_line)).alignment(Alignment::Center);
+        let bindings_widget =
+            Paragraph::new(Line::from(bindings_line)).alignment(Alignment::Center);
 
         while !self.exit {
             terminal.draw(|frame| {
                 let full = frame.size();
-                let right =  full.width - margin_side - margin_side;
+                let right = full.width - margin_side - margin_side;
 
                 frame.render_widget(&header, Rect::new(0, 5, full.width - 1, 1));
                 // Input
                 frame.render_widget(
-                    Paragraph::new(self.inputter.input.clone())
-                        .block(Block::bordered()
+                    Paragraph::new(self.inputter.input.clone()).block(
+                        Block::bordered()
                             .border_type(BorderType::Rounded)
                             .padding(Padding::horizontal(1))
                             .border_style(self.focus_border(Focus::Input)),
                     ),
-                    Rect::new(margin_side, 9, right, 3)
+                    Rect::new(margin_side, 9, right, 3),
                 );
 
                 if self.focus == Focus::Input {
                     // Cursor position in input
-                    frame.set_cursor(margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(), 10);
+                    frame.set_cursor(
+                        margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(),
+                        10,
+                    );
                 }
 
                 // Todolist
-                let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
-                    .block(Block::bordered()
-                           .border_type(BorderType::Rounded)
-                           .border_style(self.focus_border(Focus::List)))
-                    .highlight_style(
-                        Style::default().white().bg(Color::Rgb(65, 70, 80))
-                    );
+                let list = self
+                    .todolist
+                    .iter()
+                    .map(|t| t.fmt_item())
+                    .collect::<List>()
+                    .block(
+                        Block::bordered()
+                            .border_type(BorderType::Rounded)
+                            .border_style(self.focus_border(Focus::List)),
+                    )
+                    .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
 
                 frame.render_stateful_widget(
                     &list,
@@ -251,19 +261,19 @@ impl App {
                         margin_side,
                         list_top,
                         right,
-                        full.height - list_top - list_bot
+                        full.height - list_top - list_bot,
                     ),
-                    &mut liststate
+                    &mut liststate,
                 );
 
                 frame.render_widget(
                     Paragraph::new(fmt_itemsleft(&self.todolist)).alignment(Alignment::Right),
-                    Rect::new(margin_side, full.height - list_bot, right, 1)
+                    Rect::new(margin_side, full.height - list_bot, right, 1),
                 );
 
                 frame.render_widget(
                     &bindings_widget,
-                    Rect::new(0, full.height - 1, full.width - 1, 1)
+                    Rect::new(0, full.height - 1, full.width - 1, 1),
                 );
             })?;
 
