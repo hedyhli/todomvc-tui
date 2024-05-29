@@ -88,6 +88,8 @@ fn clear_completed(ts: Todos) -> Todos {
 struct Inputter {
     input: String,
     cursor: usize,
+    saved_input: String,
+    saved_cursor: usize,
 }
 
 impl Inputter {
@@ -95,7 +97,19 @@ impl Inputter {
         Self {
             input: String::new(),
             cursor: 0,
+            saved_input: String::new(),
+            saved_cursor: 0,
         }
+    }
+
+    fn save(&mut self) {
+        self.saved_cursor = self.cursor;
+        self.saved_input = self.input.clone();
+    }
+
+    fn restore(&mut self) {
+        self.cursor = self.saved_cursor;
+        self.input = self.saved_input.clone();
     }
 
     fn byte_index(&self) -> usize {
@@ -188,10 +202,14 @@ impl App {
 
     fn focus_border(&self, check_focus: Focus) -> Style {
         if self.focus == check_focus {
-            Style::default().blue()
-        } else {
-            Style::default()
+            if self.focus == Focus::Input {
+                if let Some(_) = self.editing {
+                    return Style::new().yellow();
+                }
+            }
+            return Style::new().blue();
         }
+        Style::new()
     }
 
     fn run(&mut self, terminal: &mut Tui) -> Result<()> {
@@ -337,6 +355,7 @@ impl App {
                                 // Finish editing
                                 self.todolist[idx].name = name;
                                 self.focus = Focus::List;
+                                self.editing = None;
                             } else {
                                 // New item
                                 self.todolist.push(Todo::new(name));
@@ -344,7 +363,7 @@ impl App {
                                 self.first_todo = false
                             }
 
-                            self.inputter.reset();
+                            self.inputter.restore();
                         }
                     }
                     KeyCode::Esc => {
@@ -388,6 +407,8 @@ impl App {
             } else if key.code == KeyCode::Char('e') {
                 if let Some(sel) = state.selected() {
                     self.editing = Some(sel);
+                    self.inputter.save();
+
                     self.inputter.input = self.todolist[sel].name.clone();
                     self.inputter.cursor = self.inputter.input.chars().count();
                     self.focus = Focus::Input;
