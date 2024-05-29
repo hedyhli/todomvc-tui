@@ -34,14 +34,25 @@ struct Todo {
     complete: bool,
 }
 
-type Todos = Vec<Todo>;
+impl Todo {
+    fn new(name: String) -> Self {
+        Self {
+            name,
+            complete: false,
+        }
+    }
 
-fn new_todo(name: String) -> Todo {
-    return Todo {
-        name,
-        complete: false,
-    };
+    fn toggle(&mut self) {
+        self.complete = !self.complete;
+    }
+
+    fn fmt_item(&self) -> String {
+        let middle = (if self.complete { "(X) " } else { "( ) " }).to_string() + &self.name;
+        format!("\n   {middle}\n\n")
+    }
 }
+
+type Todos = Vec<Todo>;
 
 fn new_todolist() -> Todos {
     Vec::new()
@@ -71,17 +82,6 @@ fn clear_completed(ts: Todos) -> Todos {
         }
     }
     new_items
-}
-
-impl Todo {
-    fn toggle(&mut self) {
-        self.complete = !self.complete;
-    }
-
-    fn fmt_item(&self) -> String {
-        let middle = (if self.complete { "(X) " } else { "( ) " }).to_string() + &self.name;
-        format!("\n   {middle}\n\n")
-    }
 }
 
 // Input //////////////////////////////////////////////////////////////
@@ -323,7 +323,7 @@ impl App {
                     }
                     KeyCode::Enter => {
                         let name = self.inputter.input.clone();
-                        self.todolist.push(new_todo(name));
+                        self.todolist.push(Todo::new(name));
                         self.inputter.reset();
                         state.select(Some(self.todolist.len() - 1));
                     }
@@ -338,7 +338,7 @@ impl App {
             if len == 0 {
                 return;
             }
-            if key.code == KeyCode::Down {
+            if key.code == KeyCode::Down || key.code == KeyCode::Char('j') {
                 if let Some(sel) = state.selected() {
                     if sel + 1 != len {
                         state.select(Some(sel + 1));
@@ -346,7 +346,7 @@ impl App {
                 } else {
                     state.select(Some(0));
                 }
-            } else if key.code == KeyCode::Up {
+            } else if key.code == KeyCode::Up || key.code == KeyCode::Char('k') {
                 if let Some(sel) = state.selected() {
                     if sel != 0 {
                         state.select(Some(sel - 1));
