@@ -1,9 +1,0 @@
-{
-  "tasks": {
-    "run": "deno run main.ts"
-  },
-  "imports": {
-    "tui/": "https://deno.land/x/tui@2.1.11/",
-    "crayon/": "https://deno.land/x/crayon@3.3.3/"
-  }
-}

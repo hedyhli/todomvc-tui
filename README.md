@@ -47,7 +47,8 @@
 - JS/TS
   - (planned) react-ink, probably.
   - (planned) solid-ink
-  - deno-tui
+  - (no) deno-tui does not seem customizable enough just yet to suit my needs
+    (event handling)
 
 - (planned) shell - bash or maybe even nushell.
 
