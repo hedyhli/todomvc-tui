@@ -12,21 +12,6 @@ use std::{
     io::{stdout, Result, Stdout},
 };
 
-// TUI ////////////////////////////////////////////////////////////////
-type Tui = Terminal<CrosstermBackend<Stdout>>;
-
-fn tui_init() -> Result<Tui> {
-    stdout().execute(EnterAlternateScreen)?;
-    enable_raw_mode()?;
-    Terminal::new(CrosstermBackend::new(stdout()))
-}
-
-fn tui_done() -> Result<()> {
-    stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
-    Ok(())
-}
-
 // todos //////////////////////////////////////////////////////////////
 #[derive(Debug)]
 struct Todo {
@@ -76,6 +61,7 @@ struct Inputter {
     cursor: usize,
     saved_input: String,
     saved_cursor: usize,
+    render_placeholder: bool,
 }
 
 impl Inputter {
@@ -85,6 +71,7 @@ impl Inputter {
             cursor: 0,
             saved_input: String::new(),
             saved_cursor: 0,
+            render_placeholder: true,
         }
     }
 
@@ -115,15 +102,18 @@ impl Inputter {
 
     fn right(&mut self) {
         self.cursor = self.clamp(self.cursor + 1);
+        self.render_placeholder = self.cursor == 0;
     }
 
     fn left(&mut self) {
         self.cursor = self.clamp(self.cursor - 1);
+        self.render_placeholder = self.cursor == 0;
     }
 
     /// Clear input and reset cursor to 0.
     fn reset(&mut self) {
         self.cursor = 0;
+        self.render_placeholder = true;
         self.input.clear();
     }
 
@@ -204,7 +194,7 @@ impl App {
         Style::new()
     }
 
-    fn run(&mut self, terminal: &mut Tui) -> Result<()> {
+    fn run(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         terminal.show_cursor()?;
 
         let mut liststate = ListState::default();
@@ -215,14 +205,6 @@ impl App {
 
         let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
 
-        let complete_all = Paragraph::new(Line::from(vec![
-            " (M)".bold(),                  // 4
-            " Mark all as complete".into(), // 21
-        ]));
-        let clear_completed = Paragraph::new(Line::from(vec![
-            "(C)".bold(),              // 3
-            " Clear completed".into(), // 16
-        ]));
 
         let bindings = [
             ("tab", "switch focus"),
@@ -250,7 +232,13 @@ impl App {
 
                 // Input
                 frame.render_widget(
-                    Paragraph::new(self.inputter.input.clone()).block(
+                    Paragraph::new(
+                        if self.inputter.render_placeholder && self.editing == None {
+                            Line::from("What needs to be done?").dark_gray()
+                        } else {
+                            Line::from(self.inputter.input.clone())
+                        }
+                    ).block(
                         Block::bordered()
                             .border_type(BorderType::Rounded)
                             .padding(Padding::horizontal(1))
@@ -266,15 +254,44 @@ impl App {
                     );
                 }
 
-                // Buttons
-                frame.render_widget(
-                    &complete_all,
-                    Rect::new(margin_side, list_top - 1, 21 + 5, 1)
-                );
-                frame.render_widget(
-                    &clear_completed,
-                    Rect::new(margin_side + 21 + 6, list_top - 1, 16 + 4, 1)
-                );
+                // Button/hints row
+                if self.editing != None {
+                    frame.render_widget(
+                        Paragraph::new(Line::from(
+                            vec!["enter".bold(), ": save, ".into(), "esc".bold(), ": cancel ".into()]
+                        )).alignment(Alignment::Right),
+                        Rect::new(margin_side, list_top - 1, width, 1)
+                    );
+                } else if self.focus == Focus::Input {
+                    frame.render_widget(
+                        Paragraph::new(Line::from(
+                            vec!["enter".bold(), ": save ".into()]
+                        )).alignment(Alignment::Right),
+                        Rect::new(margin_side, list_top - 1, width, 1)
+                    );
+                } else {
+                    let complete_all = Line::from(
+                        vec![" (M)".bold(), " Mark all as complete".into()]
+                    );
+                    let complete_all_width = complete_all.width() as u16;
+                    let clear_completed = Line::from(
+                        vec!["(C)".bold(), " Clear completed".into()]
+                    );
+                    let clear_completed_width = clear_completed.width() as u16;
+                    frame.render_widget(
+                        Paragraph::new(complete_all),
+                        Rect::new(margin_side, list_top - 1, complete_all_width, 1)
+                    );
+                    frame.render_widget(
+                        Paragraph::new(clear_completed),
+                        Rect::new(
+                            margin_side + complete_all_width + 2,
+                            list_top - 1,
+                            clear_completed_width,
+                            1
+                        )
+                    );
+                }
 
                 // Todolist
                 let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
@@ -327,9 +344,6 @@ impl App {
             if key.code == KeyCode::Char('c') && key.modifiers == KeyModifiers::CONTROL {
                 self.exit = true;
                 return;
-            } else if key.modifiers != KeyModifiers::NONE {
-                // Ignore all other keys with modifiers.
-                return;
             }
 
             if key.code == KeyCode::Tab {
@@ -343,6 +357,18 @@ impl App {
 
             // Input
             if self.focus == Focus::Input {
+                if key.modifiers == KeyModifiers::CONTROL {
+                    match key.code {
+                        KeyCode::Char('a') => {
+                            self.inputter.cursor = 0;
+                        },
+                        KeyCode::Char('e') => {
+                            self.inputter.cursor = self.inputter.input.chars().count();
+                        },
+                        _ => {}
+                    }
+                    return;
+                }
                 match key.code {
                     KeyCode::Char(c) => {
                         self.inputter.insert(c);
@@ -378,9 +404,12 @@ impl App {
                         }
                     }
                     KeyCode::Esc => {
-                        if let Some(_) = self.editing {
+                        // Treat as tab
+                        self.focus = Focus::List;
+                        if self.editing != None {
+                            // Current input is discarded.
+                            self.inputter.restore();
                             self.editing = None;
-                            self.focus = Focus::List;
                         }
                     }
                     _ => {}
@@ -391,7 +420,8 @@ impl App {
 
             // Todolist
             let len = self.todolist.len();
-            if len == 0 {
+            if len == 0 || key.modifiers != KeyModifiers::NONE {
+                // Ignore when modifiers are provided, or when list is empty.
                 return;
             }
 
@@ -422,12 +452,12 @@ impl App {
                     }
                 },
                 KeyCode::Char('e') => if let Some(current) = state.selected() {
-                    self.editing = Some(current);
-                    self.inputter.input = self.todolist[current].name.clone();
-                    self.inputter.cursor = self.inputter.input.chars().count();
                     // Store current input state to return to after editing.
                     self.inputter.save();
                     self.focus = Focus::Input;
+                    self.editing = Some(current);
+                    self.inputter.input = self.todolist[current].name.clone();
+                    self.inputter.cursor = self.inputter.input.chars().count();
                 },
                 KeyCode::Char('m') => {
                     complete_all(&mut self.todolist);
@@ -470,8 +500,22 @@ impl App {
 
 // main ///////////////////////////////////////////////////////////////
 fn main() -> Result<()> {
-    let mut terminal = tui_init()?;
-    let app_result = App::new().run(&mut terminal);
-    tui_done()?;
-    app_result
+    stdout().execute(EnterAlternateScreen)?;
+    let res = enable_raw_mode();
+
+    if res.is_err() {
+        // Ensure terminal is restored if entering raw mode fails
+        stdout().execute(LeaveAlternateScreen)?;
+        res
+    } else {
+        let res = Terminal::new(CrosstermBackend::new(stdout()));
+        let mut app_result = Ok(());
+        if let Ok(mut terminal) = res {
+            app_result = App::new().run(&mut terminal);
+        }
+
+        let _ = disable_raw_mode();
+        stdout().execute(LeaveAlternateScreen)?;
+        app_result
+    }
 }
