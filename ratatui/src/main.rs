@@ -102,16 +102,19 @@ impl Inputter {
         }
     }
 
+    /// Save current input and cursor position.
     fn save(&mut self) {
         self.saved_cursor = self.cursor;
         self.saved_input = self.input.clone();
     }
 
+    /// Restore saved input and cursor position.
     fn restore(&mut self) {
         self.cursor = self.saved_cursor;
         self.input = self.saved_input.clone();
     }
 
+    /// Byte index of current cursor position.
     fn byte_index(&self) -> usize {
         self.input
             .char_indices()
@@ -132,17 +135,20 @@ impl Inputter {
         self.cursor = self.clamp(self.cursor - 1);
     }
 
+    /// Clear input and reset cursor to 0.
     fn reset(&mut self) {
         self.cursor = 0;
         self.input.clear();
     }
 
+    /// Insert a new character at cursor position.
     fn insert(&mut self, c: char) {
         let index = self.byte_index();
         self.input.insert(index, c);
         self.right();
     }
 
+    /// Delete left or right a character a cursor position.
     fn delete(&mut self, right: bool) {
         if !right {
             if self.cursor == 0 {
@@ -356,14 +362,14 @@ impl App {
                                 self.todolist[idx].name = name;
                                 self.focus = Focus::List;
                                 self.editing = None;
+                                self.inputter.restore();
                             } else {
                                 // New item
                                 self.todolist.push(Todo::new(name));
                                 state.select(Some(self.todolist.len() - 1));
-                                self.first_todo = false
+                                self.first_todo = false;
+                                self.inputter.reset();
                             }
-
-                            self.inputter.restore();
                         }
                     }
                     KeyCode::Esc => {
@@ -405,14 +411,13 @@ impl App {
                 } else {
                 }
             } else if key.code == KeyCode::Char('e') {
-                if let Some(sel) = state.selected() {
-                    self.editing = Some(sel);
+                if let Some(current) = state.selected() {
+                    self.editing = Some(current);
                     self.inputter.save();
 
-                    self.inputter.input = self.todolist[sel].name.clone();
+                    self.inputter.input = self.todolist[current].name.clone();
                     self.inputter.cursor = self.inputter.input.chars().count();
                     self.focus = Focus::Input;
-                } else {
                 }
             }
         }
