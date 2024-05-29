@@ -4,7 +4,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{
-    prelude::{CrosstermBackend, Rect, Stylize, Terminal, Style, Alignment, Color},
+    prelude::{CrosstermBackend, Rect, Stylize, Terminal, Style, Alignment, Color, Line},
     widgets::{Block, Paragraph, List, ListState, BorderType, Padding},
 };
 use std::{
@@ -160,7 +160,6 @@ struct App {
     exit: bool,
     todolist: Todos,
     focus: Focus,
-    message: String,
     inputter: Inputter,
 }
 
@@ -177,8 +176,15 @@ impl App {
             exit: false,
             todolist: new_todolist(),
             focus: Focus::Input,
-            message: "hello!".to_string(),
             inputter: Inputter::new(),
+        }
+    }
+
+    fn focus_border(&self, check_focus: Focus) -> Style {
+        if self.focus == check_focus {
+            Style::default().blue()
+        } else {
+            Style::default()
         }
     }
 
@@ -194,6 +200,20 @@ impl App {
         let header = Paragraph::new("T O D O M V C")
                         .alignment(Alignment::Center);
 
+        let bindings = [
+            ("tab", "switch focus"),
+            ("arrows", "navigate list"),
+            ("space/enter", "toggle complete"),
+        ];
+        let mut bindings_line = vec!["ctrl-c".bold(), ": quit".into()];
+        for pair in bindings {
+            bindings_line.push(", ".into());
+            bindings_line.push(pair.0.bold());
+            bindings_line.push(": ".into());
+            bindings_line.push(pair.1.into());
+        }
+        let bindings_widget = Paragraph::new(Line::from(bindings_line)).alignment(Alignment::Center);
+
         while !self.exit {
             terminal.draw(|frame| {
                 let full = frame.size();
@@ -205,9 +225,12 @@ impl App {
                     Paragraph::new(self.inputter.input.clone())
                         .block(Block::bordered()
                             .border_type(BorderType::Rounded)
-                            .padding(Padding::horizontal(1))),
+                            .padding(Padding::horizontal(1))
+                            .border_style(self.focus_border(Focus::Input)),
+                    ),
                     Rect::new(margin_side, 9, right, 3)
                 );
+
                 if self.focus == Focus::Input {
                     // Cursor position in input
                     frame.set_cursor(margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(), 10);
@@ -216,7 +239,8 @@ impl App {
                 // Todolist
                 let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
                     .block(Block::bordered()
-                           .border_type(BorderType::Rounded))
+                           .border_type(BorderType::Rounded)
+                           .border_style(self.focus_border(Focus::List)))
                     .highlight_style(
                         Style::default().white().bg(Color::Rgb(65, 70, 80))
                     );
@@ -238,7 +262,7 @@ impl App {
                 );
 
                 frame.render_widget(
-                    Paragraph::new(self.message.clone()),
+                    &bindings_widget,
                     Rect::new(0, full.height - 1, full.width - 1, 1)
                 );
             })?;
@@ -263,10 +287,8 @@ impl App {
             if key.code == KeyCode::Tab {
                 if self.focus == Focus::Input {
                     self.focus = Focus::List;
-                    self.message = "list".to_string();
                 } else {
                     self.focus = Focus::Input;
-                    self.message = "input".to_string();
                 }
                 return;
             }
@@ -325,9 +347,7 @@ impl App {
             } else if key.code == KeyCode::Enter || key.code == KeyCode::Char(' ') {
                 if let Some(sel) = state.selected() {
                     self.todolist[sel].toggle();
-                    self.message = "toggled".to_string();
                 } else {
-                    self.message = "tried to toggle without selection!".to_string();
                 }
             }
         }
