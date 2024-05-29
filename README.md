@@ -3,12 +3,17 @@
 
 - Go
   - [x] tview
+
   - gocui
+
     Supports adding and toggling
+
   - (planned) bubbletea
 
 - Rust
+
   - ratatui
+
     fully featured except mouse support and a "proper" modal UI for editing
 
 - Lua
