@@ -54,10 +54,6 @@ impl Todo {
 
 type Todos = Vec<Todo>;
 
-fn new_todolist() -> Todos {
-    Vec::new()
-}
-
 fn fmt_itemsleft(ts: &Todos) -> String {
     let n = ts.iter().filter(|t| !t.complete).count();
     match n {
@@ -71,16 +67,6 @@ fn complete_all(ts: &mut Todos) {
     for t in ts {
         t.complete = true
     }
-}
-
-fn clear_completed(ts: Todos) -> Todos {
-    let mut new_items: Todos = Vec::new();
-    for t in ts {
-        if !t.complete {
-            new_items.push(t);
-        }
-    }
-    new_items
 }
 
 // Input //////////////////////////////////////////////////////////////
@@ -198,7 +184,7 @@ impl App {
     fn new() -> Self {
         Self {
             exit: false,
-            todolist: new_todolist(),
+            todolist: Vec::new(),
             focus: Focus::Input,
             inputter: Inputter::new(),
             first_todo: true,
@@ -224,10 +210,19 @@ impl App {
         let mut liststate = ListState::default();
 
         let margin_side = 30;
-        let list_top = 12;
+        let list_top = 13;
         let list_bot = 4;
 
         let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
+
+        let complete_all = Paragraph::new(Line::from(vec![
+            " (M)".bold(),                  // 4
+            " Mark all as complete".into(), // 21
+        ]));
+        let clear_completed = Paragraph::new(Line::from(vec![
+            "(C)".bold(),              // 3
+            " Clear completed".into(), // 16
+        ]));
 
         let bindings = [
             ("tab", "switch focus"),
@@ -270,6 +265,16 @@ impl App {
                         10,
                     );
                 }
+
+                // Buttons
+                frame.render_widget(
+                    &complete_all,
+                    Rect::new(margin_side, list_top - 1, 21 + 5, 1)
+                );
+                frame.render_widget(
+                    &clear_completed,
+                    Rect::new(margin_side + 21 + 6, list_top - 1, 16 + 4, 1)
+                );
 
                 // Todolist
                 let list = self
@@ -419,6 +424,32 @@ impl App {
                     self.inputter.cursor = self.inputter.input.chars().count();
                     self.focus = Focus::Input;
                 }
+            } else if key.code == KeyCode::Char('m') {
+                complete_all(&mut self.todolist);
+            } else if key.code == KeyCode::Char('c') {
+                let mut new_list = Vec::new();
+                // Save current selection, if current item is not cleared.
+                let sel = match state.selected() {
+                    None => self.todolist.len(),
+                    Some(i) => i,
+                };
+                let mut new_sel = sel;
+                let mut sel_cleared = true;
+
+                for (i, t) in self.todolist.iter().enumerate() {
+                    if !t.complete {
+                        new_list.push(Todo { name: t.name.clone(), complete: t.complete });
+                        if i == sel {
+                            sel_cleared = false;
+                        }
+                    } else {
+                        if i < sel {
+                            new_sel -= 1;
+                        }
+                    }
+                }
+                self.todolist = new_list;
+                state.select(if !sel_cleared { Some(new_sel) } else { None });
             }
         }
     }
