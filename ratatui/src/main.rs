@@ -59,13 +59,12 @@ fn new_todolist() -> Todos {
 }
 
 fn fmt_itemsleft(ts: &Todos) -> String {
-    let mut n = 0;
-    for t in ts {
-        if !t.complete {
-            n += 1;
-        }
+    let n = ts.iter().filter(|t| !t.complete).count();
+    match n {
+        0 => "woohoo! all done".to_string(),
+        1 => "1 item left".to_string(),
+        _ => format!("{} item{} left", n, (if n == 1 { "" } else { "s" }))
     }
-    format!("{} item{} left", n, (if n == 1 { "" } else { "s" }))
 }
 
 fn complete_all(ts: &mut Todos) {
@@ -164,6 +163,7 @@ struct App {
     todolist: Todos,
     focus: Focus,
     inputter: Inputter,
+    first_todo: bool,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -180,6 +180,7 @@ impl App {
             todolist: new_todolist(),
             focus: Focus::Input,
             inputter: Inputter::new(),
+            first_todo: true,
         }
     }
 
@@ -267,7 +268,9 @@ impl App {
                 );
 
                 frame.render_widget(
-                    Paragraph::new(fmt_itemsleft(&self.todolist)).alignment(Alignment::Right),
+                    Paragraph::new(
+                        if self.first_todo { String::new() } else { fmt_itemsleft(&self.todolist) }
+                    ).alignment(Alignment::Right),
                     Rect::new(margin_side, full.height - list_bot, right, 1),
                 );
 
@@ -326,6 +329,7 @@ impl App {
                         self.todolist.push(Todo::new(name));
                         self.inputter.reset();
                         state.select(Some(self.todolist.len() - 1));
+                        self.first_todo = false
                     }
                     _ => {}
                 }
