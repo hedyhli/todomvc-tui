@@ -43,6 +43,7 @@
 
   - (probably not) urwid, curses
   - WIP: blessed
+  - (planned) pytermgui
 
 - (planned) Some lisps, hopefully.
 
