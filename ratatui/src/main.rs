@@ -101,12 +101,12 @@ impl Inputter {
     }
 
     fn right(&mut self) {
-        self.cursor = self.clamp(self.cursor + 1);
+        self.cursor = self.clamp(self.cursor.saturating_add(1));
         self.render_placeholder = self.cursor == 0;
     }
 
     fn left(&mut self) {
-        self.cursor = self.clamp(self.cursor - 1);
+        self.cursor = self.clamp(self.cursor.saturating_sub(1));
         self.render_placeholder = self.cursor == 0;
     }
 
@@ -204,7 +204,6 @@ impl App {
         let list_bot = 4;
 
         let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
-
 
         let bindings = [
             ("tab", "switch focus"),
@@ -519,3 +518,6 @@ fn main() -> Result<()> {
         app_result
     }
 }
+
+#[cfg(test)]
+mod test;

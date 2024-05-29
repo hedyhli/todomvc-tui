@@ -39,6 +39,8 @@ See implementations marked with `[x]` as flagship/example implementations.
 
 Everything should be in a single file unless *absolutely necessary*.
 
+Tests may be added, and may or may not be in the same file.
+
 ### functionality
 
 - Show N incomplete as text
