@@ -2,7 +2,7 @@
 
 ![demo](./demo.png)
 
-## Status
+## Implementations
 
 - Go
   - [x] tview
@@ -42,7 +42,7 @@
 
   - (probably not) urwid, curses
 
-- (planned) Some lisps
+- (planned) Some lisps, hopefully.
 
 - JS/TS
   - (planned) react-ink, probably.
@@ -56,13 +56,25 @@
 
 (loosely formatted)
 
-See implementations marked with `[x]` as flagship/example implementations.
+Implementations marked with `[x]` are deemed "complete". They should satisfy
+_most_ of the requirements as listed below, in two or three areas more so,
+possibly because the framework/library used provides certain functionality out
+of the box.
 
 ### code
 
-Everything should be in a single file unless *absolutely necessary*.
-
-Tests may be added, and may or may not be in the same file.
+- All code should be in a single file unless required otherwise by the
+  toolchain, in which case, stick to as little code splitting as possible for ease
+  of comparison. The single file should be named `main.<ext>` unless required
+  otherwise by the toolchain.
+- Tests may be added, and may or may not be in the same file
+- Documentation on functions may be added
+- A binary, if produced, or a project name if required, should be named
+  "todomvc-tui"
+- directories are named by the framework/library used that does the primary
+  heavy-lifting for the terminal, optionally prefixed with the language file
+  extension for disambiguation, e.g. "lua-ncurses" for an implementation using the
+  famous ncurses library, but with lua bindings.
 
 ### functionality
 
