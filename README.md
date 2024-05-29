@@ -4,17 +4,24 @@
 - Go
   - [x] tview
   - gocui
+    Supports adding and toggling
   - (planned) bubbletea
+
 - Rust
   - ratatui
+    fully featured except mouse support and a "proper" modal UI for editing
+
 - Lua
   - (planned) ltui
   - (planned) notcurses?
+
 - (planned) Nim
 - (planned) C
+
 - Python
   - [x] Textual
   - (planned) Curses
+
 - (planned) Some lisps
 
 ## Spec
