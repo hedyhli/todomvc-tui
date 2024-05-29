@@ -277,16 +277,10 @@ impl App {
                 );
 
                 // Todolist
-                let list = self
-                    .todolist
-                    .iter()
-                    .map(|t| t.fmt_item())
-                    .collect::<List>()
-                    .block(
-                        Block::bordered()
-                            .border_type(BorderType::Rounded)
-                            .border_style(self.focus_border(Focus::List)),
-                    )
+                let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
+                    .block(Block::bordered()
+                           .border_type(BorderType::Rounded)
+                           .border_style(self.focus_border(Focus::List)))
                     .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
 
                 frame.render_stateful_widget(
@@ -303,7 +297,11 @@ impl App {
                 // Itemsleft
                 frame.render_widget(
                     Paragraph::new(
-                        if self.first_todo { String::new() } else { fmt_itemsleft(&self.todolist) }
+                        if self.first_todo {
+                            String::new()
+                        } else {
+                            fmt_itemsleft(&self.todolist)
+                        }
                     ).alignment(Alignment::Right),
                     Rect::new(margin_side, full.height - list_bot, width, 1),
                 );
@@ -315,6 +313,7 @@ impl App {
                 );
             })?;
 
+            // Blocks until there's an event. I think.
             match event::read()? {
                 Event::Key(key_event) => self.handle_key(key_event, &mut liststate),
                 _ => {}
@@ -329,6 +328,7 @@ impl App {
                 self.exit = true;
                 return;
             } else if key.modifiers != KeyModifiers::NONE {
+                // Ignore all other keys with modifiers.
                 return;
             }
 
@@ -394,63 +394,76 @@ impl App {
             if len == 0 {
                 return;
             }
-            if key.code == KeyCode::Down || key.code == KeyCode::Char('j') {
-                if let Some(sel) = state.selected() {
-                    if sel + 1 != len {
-                        state.select(Some(sel + 1));
-                    }
-                } else {
-                    state.select(Some(0));
-                }
-            } else if key.code == KeyCode::Up || key.code == KeyCode::Char('k') {
-                if let Some(sel) = state.selected() {
-                    if sel != 0 {
-                        state.select(Some(sel - 1));
-                    }
-                } else {
-                    state.select(Some(len - 1));
-                }
-            } else if key.code == KeyCode::Enter || key.code == KeyCode::Char(' ') {
-                if let Some(sel) = state.selected() {
-                    self.todolist[sel].toggle();
-                } else {
-                }
-            } else if key.code == KeyCode::Char('e') {
-                if let Some(current) = state.selected() {
-                    self.editing = Some(current);
-                    self.inputter.save();
 
-                    self.inputter.input = self.todolist[current].name.clone();
-                    self.inputter.cursor = self.inputter.input.chars().count();
-                    self.focus = Focus::Input;
-                }
-            } else if key.code == KeyCode::Char('m') {
-                complete_all(&mut self.todolist);
-            } else if key.code == KeyCode::Char('c') {
-                let mut new_list = Vec::new();
-                // Save current selection, if current item is not cleared.
-                let sel = match state.selected() {
-                    None => self.todolist.len(),
-                    Some(i) => i,
-                };
-                let mut new_sel = sel;
-                let mut sel_cleared = true;
-
-                for (i, t) in self.todolist.iter().enumerate() {
-                    if !t.complete {
-                        new_list.push(Todo { name: t.name.clone(), complete: t.complete });
-                        if i == sel {
-                            sel_cleared = false;
+            match key.code {
+                KeyCode::Down | KeyCode::Char('j') => {
+                    if let Some(sel) = state.selected() {
+                        // Does not wrap
+                        if sel + 1 != len {
+                            state.select(Some(sel + 1));
                         }
                     } else {
-                        if i < sel {
-                            new_sel -= 1;
+                        state.select(Some(0));
+                    }
+                },
+                KeyCode::Up | KeyCode::Char('k') => {
+                    if let Some(sel) = state.selected() {
+                        // Does not wrap
+                        if sel != 0 {
+                            state.select(Some(sel - 1));
+                        }
+                    } else {
+                        state.select(Some(len - 1));
+                    }
+                },
+                KeyCode::Enter | KeyCode::Char(' ') => {
+                    if let Some(sel) = state.selected() {
+                        self.todolist[sel].toggle();
+                    }
+                },
+                KeyCode::Char('e') => if let Some(current) = state.selected() {
+                    self.editing = Some(current);
+                    self.inputter.input = self.todolist[current].name.clone();
+                    self.inputter.cursor = self.inputter.input.chars().count();
+                    // Store current input state to return to after editing.
+                    self.inputter.save();
+                    self.focus = Focus::Input;
+                },
+                KeyCode::Char('m') => {
+                    complete_all(&mut self.todolist);
+                },
+                KeyCode::Char('c') => {
+                    let mut new_list = Vec::new();
+                    // Save current selection, if current item is not cleared.
+                    let sel = match state.selected() {
+                        None => len,
+                        Some(i) => i,
+                    };
+                    // New index of current selection after clearing.
+                    let mut new_sel = sel;
+                    // Whether current selection is cleared along with other completed items.
+                    let mut sel_cleared = true;
+
+                    for (i, t) in self.todolist.iter().enumerate() {
+                        if !t.complete {
+                            // This item is kept.
+                            new_list.push(Todo { name: t.name.clone(), complete: t.complete });
+                            if i == sel {
+                                sel_cleared = false;
+                            }
+                        } else {
+                            // This item is cleared.
+                            if i < sel {
+                                // Shift index for selection.
+                                new_sel -= 1;
+                            }
                         }
                     }
-                }
-                self.todolist = new_list;
-                state.select(if !sel_cleared { Some(new_sel) } else { None });
-            }
+                    self.todolist = new_list;
+                    state.select(if !sel_cleared { Some(new_sel) } else { None });
+                },
+                _ => {}
+            };
         }
     }
 }
