@@ -21,7 +21,7 @@
 
   - (planned) cursive, possibly
 
-- Zig, but as it stands right now the ecosystem is limited.
+- ~~Zig~~, but as it stands right now the ecosystem is limited.
 
 - Lua (but written with Fennel, probably)
   - (planned) ltui
@@ -52,7 +52,8 @@
 
 - (planned) shell - bash or maybe even nushell.
 
-- (planned) haskell
+- ~~haskell~~ - as much as I'd love to add it to the list, the tooling is
+  extremely involved to setup (on my machine) right now.
 
 ## Spec
 
