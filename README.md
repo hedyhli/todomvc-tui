@@ -12,22 +12,42 @@
 
 - Rust
 
-  - ratatui
+  - [x] ratatui
 
     fully featured except mouse support and a "proper" modal UI for editing
 
-- Lua
-  - (planned) ltui
-  - (planned) notcurses?
+  - (planned) cursive, possibly
 
-- (planned) Nim
-- (planned) C
+- Zig, but as it stands right now the ecosystem is limited.
+
+- Lua (but written with Fennel, probably)
+  - (planned) ltui
+  - (planned) a C lib with bindings
+
+- Nim
+  - (planned) illwill
+
+- C
+  - (planned) ncurses, possibly
 
 - Python
   - [x] Textual
-  - (planned) Curses
+
+    Does not have buttons for "mark all as completed" etc because I can't figure
+    out how to have single-row buttons in textual, and using keybindings to do
+    these operations instead is boring and trivial.
+
+  - (probably not) urwid, curses
 
 - (planned) Some lisps
+
+- JS/TS
+  - (planned) react-ink, probably.
+  - (planned) solid-ink
+
+- (planned) shell - bash or maybe even nushell.
+
+- (planned) haskell
 
 ## Spec
 
