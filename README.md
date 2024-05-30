@@ -13,6 +13,8 @@
 
   - (planned) bubbletea
 
+  - (planned) vaxis
+
 - Rust
 
   - [x] ratatui
