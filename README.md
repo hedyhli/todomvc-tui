@@ -62,7 +62,7 @@
   extremely involved to setup (on my machine) right now.
 
 - V
-  - `term.ui`
+  - [x] `term.ui`
 
 ## Spec
 

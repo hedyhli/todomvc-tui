@@ -5,8 +5,9 @@ mut:
 	tui &tui.Context = unsafe { nil }
 	inputter &Inputter = &Inputter{}
 	focus Focus = .input
-	message string
 	list []Todo
+	sel int
+	initial bool = true
 }
 
 struct Inputter {
@@ -14,6 +15,32 @@ mut:
 	input string
 	cursor int
 	len int
+}
+
+fn (mut inp Inputter) clamp_cursor(offset int) {
+	mut new := inp.cursor + offset
+	if new < 0 {
+		new = 0
+	}
+	if new > inp.input.len {
+		new = inp.input.len
+	}
+	inp.cursor = new
+}
+
+fn (mut inp Inputter) left() {
+	inp.clamp_cursor(-1)
+}
+
+fn (mut inp Inputter) right() {
+	inp.clamp_cursor(1)
+}
+
+// Clear
+fn (mut inp Inputter) reset() {
+	inp.input = ""
+	inp.len = 0
+	inp.cursor = 0
 }
 
 struct Todo {
@@ -62,13 +89,6 @@ fn (t Todo) format() string {
 	return "( ) ${t.name}"
 }
 
-// Clear
-fn (mut inp Inputter) reset() {
-	inp.input = ""
-	inp.len = 0
-	inp.cursor = 0
-}
-
 fn event(e &tui.Event, x voidptr) {
 	mut app := unsafe { &App(x) }
 
@@ -85,6 +105,21 @@ fn event(e &tui.Event, x voidptr) {
 	}
 
 	if app.focus == .list {
+		if e.modifiers != unsafe { nil } {
+			return
+		}
+		if e.code == .down || e.code == .j {
+			app.sel += if app.sel != app.list.len { 1 } else { 0 }
+			return
+		}
+		if e.code == .up || e.code == .k {
+			app.sel -= if app.sel != 0 { 1 } else { 0 }
+			return
+		}
+		if e.code == .space || e.code == .enter {
+			app.list[app.sel].complete = !app.list[app.sel].complete
+			return
+		}
 		return
 	}
 
@@ -106,25 +141,29 @@ fn event(e &tui.Event, x voidptr) {
 		return
 	}
 
+	if e.code == .home {
+		app.inputter.cursor = 0
+		return
+	}
+	if e.code == .end {
+		app.inputter.cursor = app.inputter.len
+	}
 	if e.code == .right {
-		cursor := app.inputter.cursor + 1
-		if cursor <= app.inputter.len + 1 {
-			app.inputter.cursor = cursor
-		}
+		app.inputter.left()
 		return
 	}
 	if e.code == .left {
-		if app.inputter.cursor != 0 {
-			app.inputter.cursor = app.inputter.cursor - 1
-		}
+		app.inputter.left()
 		return
 	}
 	if e.code == .enter {
 		app.list << new_todo(app.inputter.input)
 		app.inputter.reset()
+		app.initial = false
 		return
 	}
 	if e.code == .backspace {
+		// delete left
 		if app.inputter.cursor == 0 {
 			return
 		}
@@ -135,6 +174,7 @@ fn event(e &tui.Event, x voidptr) {
 		app.inputter.cursor -= 1
 		return
 	}
+	// insert
 	inp := app.inputter.input
 	c := app.inputter.cursor
 	app.inputter.input = inp[..c] + u8(e.code).ascii_str() + inp[c..]
@@ -207,12 +247,16 @@ fn frame(x voidptr) {
 	app.tui.reset()
 
 	for i, todo in app.list {
+		if i == app.sel {
+			app.tui.set_bg_color(r: 100, g: 100, b: 100)
+		}
 		app.tui.draw_text(sides + 3, 15 + i * 2, todo.format())
+		app.tui.reset()
 	}
 
-	app.right_text(-sides, 13 + 18, itemsleft(app.list))
-
-	app.tui.draw_text(0, 0, app.message)
+	if !app.initial {
+		app.right_text(-sides, 13 + 18, itemsleft(app.list))
+	}
 
 	app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
 
