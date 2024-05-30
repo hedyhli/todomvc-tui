@@ -24,7 +24,8 @@
   - (maybe?) cursive, requires ncurses
   - (planned) zi
 
-- ~~Zig~~ as it stands right now the ecosystem is a little limited.
+- Zig
+  - (planned) libvaxis
 
 - Lua (but written with Fennel, probably)
   - (planned) ltui
