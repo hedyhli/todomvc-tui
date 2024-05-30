@@ -61,6 +61,9 @@
 - ~~haskell~~ - as much as I'd love to add it to the list, the tooling is
   extremely involved to setup (on my machine) right now.
 
+- V
+  - `term.ui`
+
 ## Spec
 
 (loosely formatted)
