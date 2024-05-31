@@ -1,25 +1,42 @@
 import term.ui as tui
 
-struct App {
+// Todos
+struct Todo {
 mut:
-	tui      &tui.Context = unsafe { nil }
-	inputter &Inputter    = &Inputter{}
-	focus    Focus        = .input
-	list     []Todo
-	sel      int
-	initial  bool = true
-	// Index of first list item to show
-	list_offset int
-	editing bool
-	// Inputter instance for editing todo names
-	editor  &Inputter = &Inputter{}
+	name     string
+	complete bool
 }
 
-enum Focus {
-	input
-	list
+fn Todo.new(name string) Todo {
+	return Todo{
+		name: name
+		complete: false
+	}
 }
 
+fn (t Todo) format() string {
+	if t.complete {
+		return '(X) ${t.name}'
+	}
+	return '( ) ${t.name}'
+}
+
+fn itemsleft(todos []Todo) string {
+	mut n := 0
+	for t in todos {
+		if !t.complete {
+			n += 1
+		}
+	}
+
+	match n {
+		0    { return 'woohoo! nothing else to do' }
+		1    { return '1 item left' }
+		else { return '${n} items left' }
+	}
+}
+
+// Input widget
 struct Inputter {
 mut:
 	input  string
@@ -32,6 +49,7 @@ enum InputAction {
 	@none
 }
 
+// Add offset to current cursor position, then clamp it.
 fn (mut inp Inputter) clamp_cursor(offset int) {
 	mut new := inp.cursor + offset
 	if new < 0 {
@@ -51,13 +69,12 @@ fn (mut inp Inputter) right() {
 	inp.clamp_cursor(1)
 }
 
-// Clear
+// Clears input
 fn (mut inp Inputter) reset() {
 	inp.input = ''
 	inp.cursor = 0
 }
 
-// Insert
 fn (mut inp Inputter) insert(ch string) {
 	inp.input = inp.input[..inp.cursor] + ch + inp.input[inp.cursor..]
 	inp.cursor += 1
@@ -114,41 +131,28 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 	return .@none
 }
 
-struct Todo {
+// Current user focus
+enum Focus {
+	input
+	list
+}
+
+struct App {
 mut:
-	name     string
-	complete bool
+	tui      &tui.Context = unsafe { nil }
+	inputter &Inputter    = &Inputter{}
+	focus    Focus        = .input
+	list     []Todo
+	sel      int
+	initial  bool = true
+	// Index of first list item to show
+	list_offset int
+	editing     bool
+	// Inputter instance for editing todo names
+	editor &Inputter = &Inputter{}
 }
 
-fn Todo.new(name string) Todo {
-	return Todo{
-		name: name
-		complete: false
-	}
-}
-
-fn itemsleft(todos []Todo) string {
-	mut n := 0
-	for t in todos {
-		if !t.complete {
-			n += 1
-		}
-	}
-
-	match n {
-		0    { return 'woohoo! nothing else to do' }
-		1    { return '1 item left' }
-		else { return '${n} items left' }
-	}
-}
-
-fn (t Todo) format() string {
-	if t.complete {
-		return '(X) ${t.name}'
-	}
-	return '( ) ${t.name}'
-}
-
+// Ensure current selection is visible in viewport.
 fn (mut app App) update_scroll() {
 	// 8: max items in a list
 	if app.sel - app.list_offset >= 8 {
@@ -158,6 +162,7 @@ fn (mut app App) update_scroll() {
 	}
 }
 
+// Handle a TUI event
 fn event(e &tui.Event, x voidptr) {
 	mut app := unsafe { &App(x) }
 
@@ -300,6 +305,7 @@ fn (mut app App) right_text(right int, y int, text string) {
 	app.tui.draw_text(x - text.len, y, text)
 }
 
+// Draw the entire UI of the TUI
 fn frame(x voidptr) {
 	mut app := unsafe { &App(x) }
 
@@ -310,6 +316,7 @@ fn frame(x voidptr) {
 
 	mut normal_color := tui.Color{r: 255, g: 255, b: 255}
 	if app.editing {
+		// Make everything else dimmed when the modal is shown.
 		normal_color = tui.Color{r: 100, g: 100, b: 100}
 	}
 
@@ -322,7 +329,7 @@ fn frame(x voidptr) {
 	}
 	app.bordered(sides, 10, 3)
 	app.tui.set_color(normal_color)
-
+	// Input text
 	if app.inputter.input.len == 0 {
 		app.tui.set_color(r: 90, g: 90, b: 100)
 		app.tui.draw_text(sides + 2, 11, "What needs to be done?")
@@ -337,7 +344,7 @@ fn frame(x voidptr) {
 	}
 	app.bordered(sides, 13, 19)
 	app.tui.set_color(normal_color)
-
+	// List items
 	for i, todo in app.list {
 		if i < app.list_offset {
 			continue
@@ -356,7 +363,6 @@ fn frame(x voidptr) {
 	if !app.initial {
 		app.right_text(-sides, 13 + 19, itemsleft(app.list))
 	}
-
 
 	// Hints
 	keys := {
