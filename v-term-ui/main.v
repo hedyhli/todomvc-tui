@@ -54,7 +54,7 @@ enum Focus {
 	list
 }
 
-fn new_todo(name string) Todo {
+fn Todo.new(name string) Todo {
 	return Todo {
 		name: name,
 		complete: false,
@@ -157,7 +157,7 @@ fn event(e &tui.Event, x voidptr) {
 		return
 	}
 	if e.code == .enter {
-		app.list << new_todo(app.inputter.input)
+		app.list << Todo.new(app.inputter.input)
 		app.inputter.reset()
 		app.initial = false
 		return
@@ -182,24 +182,26 @@ fn event(e &tui.Event, x voidptr) {
 	app.inputter.cursor += 1
 }
 
-// Rectangle with borders
+// Rectangle with borders of fixed height, top margin, and side margin
 fn (mut app App) bordered(sides int, top int, height int) {
 	full_w := app.tui.window_width
-	full_h := app.tui.window_height
 
 	bot := top + height - 1
 
+	// top
 	app.tui.draw_text(sides, top, "┌")
 	for i in sides+1..(full_w - sides) {
 		app.tui.draw_text(i, top, "─")
 	}
 	app.tui.draw_text(full_w - sides, top, "┐")
 
+	// sides
 	for j in top + 1 .. (bot) {
 		app.tui.draw_text(sides, j, "│")
 		app.tui.draw_text(full_w - sides, j, "│")
 	}
 
+	// bottom
 	app.tui.draw_text(sides, bot, "└")
 	for i in sides+1..(full_w - sides) {
 		app.tui.draw_text(i, bot, "─")
@@ -207,11 +209,13 @@ fn (mut app App) bordered(sides int, top int, height int) {
 	app.tui.draw_text(full_w - sides, bot, "┘")
 }
 
+// Draw horizontally center-aligned text at y
 fn (mut app App) centered_text(y int, text string) {
 	full := app.tui.window_width
 	app.tui.draw_text(full / 2 - text.len / 2, y, text)
 }
 
+// Draw right-aligned text at x position right (can be negative) and at y
 fn (mut app App) right_text(right int, y int, text string) {
 	mut x := right
 	full := app.tui.window_width
