@@ -15,6 +15,11 @@ mut:
 	editor  &Inputter = &Inputter{}
 }
 
+enum Focus {
+	input
+	list
+}
+
 struct Inputter {
 mut:
 	input  string
@@ -138,11 +143,6 @@ mut:
 	complete bool
 }
 
-enum Focus {
-	input
-	list
-}
-
 fn Todo.new(name string) Todo {
 	return Todo{
 		name: name
@@ -249,6 +249,8 @@ fn event(e &tui.Event, x voidptr) {
 			app.list << Todo.new(app.inputter.input)
 			app.initial = false
 			app.inputter.reset()
+			app.sel = app.list.len - 1
+			app.update_scroll()
 		}
 		else {}
 	}
