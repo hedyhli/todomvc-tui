@@ -66,16 +66,11 @@ fn (mut inp Inputter) insert(ch string) {
 fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 	if e.modifiers == .ctrl {
 		match e.code {
-			.e {
-				inp.cursor = inp.input.len
-			}
-			.a {
-				inp.cursor = 0
-			}
-			else {
-				return .@none
-			}
+			.e { inp.cursor = inp.input.len }
+			.a { inp.cursor = 0 }
+			else {}
 		}
+		return .@none
 	}
 
 	if e.modifiers == .alt || e.modifiers == .ctrl {
@@ -83,21 +78,10 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 	}
 
 	match e.code {
-		.home {
-			inp.cursor = 0
-			return .@none
-		}
-		.end {
-			inp.cursor = inp.input.len
-		}
-		.right {
-			inp.right()
-			return .@none
-		}
-		.left {
-			inp.left()
-			return .@none
-		}
+		.home  { inp.cursor = 0 }
+		.end   { inp.cursor = inp.input.len }
+		.right { inp.right() }
+		.left  { inp.left() }
 		.backspace {
 			// delete left
 			if inp.cursor == 0 {
@@ -105,7 +89,6 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 			}
 			inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
 			inp.cursor -= 1
-			return .@none
 		}
 		.delete {
 			// delete right
@@ -113,9 +96,8 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 				return .@none
 			}
 			inp.input = inp.input[..inp.cursor] + inp.input[inp.cursor+1..]
-			return .@none
 		}
-		.enter { return .enter }
+		.enter  { return .enter }
 		.escape { return .escape }
 		else {
 			// insert
@@ -154,15 +136,9 @@ fn itemsleft(todos []Todo) string {
 	}
 
 	match n {
-		0 {
-			return 'woohoo! nothing else to do'
-		}
-		1 {
-			return '1 item left'
-		}
-		else {
-			return '${n} items left'
-		}
+		0    { return 'woohoo! nothing else to do' }
+		1    { return '1 item left' }
+		else { return '${n} items left' }
 	}
 }
 
@@ -219,22 +195,18 @@ fn event(e &tui.Event, x voidptr) {
 			.down, .j {
 				app.sel += if app.sel != app.list.len - 1 { 1 } else { 0 }
 				app.update_scroll()
-				return
 			}
 			.up, .k {
 				app.sel -= if app.sel != 0 { 1 } else { 0 }
 				app.update_scroll()
-				return
 			}
 			.space, .enter {
 				app.list[app.sel].complete = !app.list[app.sel].complete
-				return
 			}
 			.e {
 				app.editing = true
 				app.editor.input = app.list[app.sel].name
 				app.editor.cursor = app.editor.input.len
-				return
 			}
 			else {}
 		}
@@ -325,8 +297,7 @@ fn (mut app App) right_text(right int, y int, text string) {
 	if right <= 0 {
 		x = full + right
 	}
-	len := utf8_str_visible_length(text)
-	app.tui.draw_text(x - len, y, text)
+	app.tui.draw_text(x - text.len, y, text)
 }
 
 fn frame(x voidptr) {
@@ -394,7 +365,6 @@ fn frame(x voidptr) {
 		"space/enter": "toggle complete",
 		"e": "edit item",
 	}
-
 	width := (
 		keys.keys().join('').len       // keys
 		+ keys.keys().len * 2          // ": "
