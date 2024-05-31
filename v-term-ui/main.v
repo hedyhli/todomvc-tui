@@ -8,6 +8,8 @@ mut:
 	list []Todo
 	sel int
 	initial bool = true
+	// Index of first list item to show
+	list_offset int
 }
 
 struct Inputter {
@@ -89,6 +91,15 @@ fn (t Todo) format() string {
 	return "( ) ${t.name}"
 }
 
+fn (mut app App) update_scroll() {
+	// 8: max items in a list
+	if app.sel - app.list_offset >= 8 {
+		app.list_offset = app.sel - 8 + 1
+	} else if app.sel - app.list_offset < 0 {
+		app.list_offset = app.sel
+	}
+}
+
 fn event(e &tui.Event, x voidptr) {
 	mut app := unsafe { &App(x) }
 
@@ -110,10 +121,12 @@ fn event(e &tui.Event, x voidptr) {
 		}
 		if e.code == .down || e.code == .j {
 			app.sel += if app.sel != app.list.len - 1 { 1 } else { 0 }
+			app.update_scroll()
 			return
 		}
 		if e.code == .up || e.code == .k {
 			app.sel -= if app.sel != 0 { 1 } else { 0 }
+			app.update_scroll()
 			return
 		}
 		if e.code == .space || e.code == .enter {
@@ -247,19 +260,26 @@ fn frame(x voidptr) {
 	if app.focus == .list {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
-	app.bordered(sides, 13, 18)
+	app.bordered(sides, 13, 19)
 	app.tui.reset()
 
 	for i, todo in app.list {
+		if i < app.list_offset {
+			continue
+		}
 		if i == app.sel {
 			app.tui.set_bg_color(r: 100, g: 100, b: 100)
 		}
-		app.tui.draw_text(sides + 3, 15 + i * 2, todo.format())
+		app.tui.draw_text(sides + 3, 15 + (i-app.list_offset) * 2, todo.format())
 		app.tui.reset()
+		if i - app.list_offset == 7 {
+			break
+		}
 	}
 
+	// Itemsleft
 	if !app.initial {
-		app.right_text(-sides, 13 + 18, itemsleft(app.list))
+		app.right_text(-sides, 13 + 19, itemsleft(app.list))
 	}
 
 	app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
