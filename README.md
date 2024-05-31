@@ -83,10 +83,9 @@ of the box.
 - Documentation on functions may be added
 - A binary, if produced, or a project name if required, should be named
   "todomvc-tui"
-- directories are named by the framework/library used that does the primary
-  heavy-lifting for the terminal, optionally prefixed with the language file
-  extension for disambiguation, e.g. "lua-ncurses" for an implementation using the
-  famous ncurses library, but with lua bindings.
+- directories are named `<language>-<framework>` where language is the full
+  language name, followed by the framework/library used that does the primary
+  heavy-lifting for the terminal.
 
 ### functionality
 
