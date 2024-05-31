@@ -82,51 +82,51 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 		return .@none
 	}
 
-	if e.code == .home {
-		inp.cursor = 0
-		return .@none
-	}
-	if e.code == .end {
-		inp.cursor = inp.input.len
-	}
-	if e.code == .right {
-		inp.right()
-		return .@none
-	}
-	if e.code == .left {
-		inp.left()
-		return .@none
-	}
-	if e.code == .enter {
-		return .enter
-	}
-	if e.code == .backspace {
-		// delete left
-		if inp.cursor == 0 {
+	match e.code {
+		.home {
+			inp.cursor = 0
 			return .@none
 		}
-		inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
-		inp.cursor -= 1
-		return .@none
-	}
-	if e.code == .delete {
-		// delete right
-		if inp.cursor == inp.input.len {
+		.end {
+			inp.cursor = inp.input.len
+		}
+		.right {
+			inp.right()
 			return .@none
 		}
-		inp.input = inp.input[..inp.cursor] + inp.input[inp.cursor+1..]
-		return .@none
-	}
-	if e.code == .escape {
-		return .escape
-	}
-	// insert
-	keycode := u8(e.code)
-	if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
-		if e.modifiers == .shift && (keycode >= 97 && keycode <= 122) {
-			inp.insert((keycode - 32).ascii_str())
-		} else {
-			inp.insert(keycode.ascii_str())
+		.left {
+			inp.left()
+			return .@none
+		}
+		.backspace {
+			// delete left
+			if inp.cursor == 0 {
+				return .@none
+			}
+			inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
+			inp.cursor -= 1
+			return .@none
+		}
+		.delete {
+			// delete right
+			if inp.cursor == inp.input.len {
+				return .@none
+			}
+			inp.input = inp.input[..inp.cursor] + inp.input[inp.cursor+1..]
+			return .@none
+		}
+		.enter { return .enter }
+		.escape { return .escape }
+		else {
+			// insert
+			keycode := u8(e.code)
+			if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
+				if e.modifiers == .shift && (keycode >= 97 && keycode <= 122) {
+					inp.insert((keycode - 32).ascii_str())
+				} else {
+					inp.insert(keycode.ascii_str())
+				}
+			}
 		}
 	}
 	return .@none
@@ -215,25 +215,28 @@ fn event(e &tui.Event, x voidptr) {
 		if e.modifiers != unsafe { nil } {
 			return
 		}
-		if e.code == .down || e.code == .j {
-			app.sel += if app.sel != app.list.len - 1 { 1 } else { 0 }
-			app.update_scroll()
-			return
-		}
-		if e.code == .up || e.code == .k {
-			app.sel -= if app.sel != 0 { 1 } else { 0 }
-			app.update_scroll()
-			return
-		}
-		if e.code == .space || e.code == .enter {
-			app.list[app.sel].complete = !app.list[app.sel].complete
-			return
-		}
-		if e.code == .e {
-			app.editing = true
-			app.editor.input = app.list[app.sel].name
-			app.editor.cursor = app.editor.input.len
-			return
+		match e.code {
+			.down, .j {
+				app.sel += if app.sel != app.list.len - 1 { 1 } else { 0 }
+				app.update_scroll()
+				return
+			}
+			.up, .k {
+				app.sel -= if app.sel != 0 { 1 } else { 0 }
+				app.update_scroll()
+				return
+			}
+			.space, .enter {
+				app.list[app.sel].complete = !app.list[app.sel].complete
+				return
+			}
+			.e {
+				app.editing = true
+				app.editor.input = app.list[app.sel].name
+				app.editor.cursor = app.editor.input.len
+				return
+			}
+			else {}
 		}
 		return
 	}
