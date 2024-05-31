@@ -109,7 +109,7 @@ fn event(e &tui.Event, x voidptr) {
 			return
 		}
 		if e.code == .down || e.code == .j {
-			app.sel += if app.sel != app.list.len { 1 } else { 0 }
+			app.sel += if app.sel != app.list.len - 1 { 1 } else { 0 }
 			return
 		}
 		if e.code == .up || e.code == .k {
