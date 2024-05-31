@@ -64,6 +64,8 @@
 - V
   - [x] `term.ui`
 
+    fully-featured with modal dialog for editing, no mouse support.
+
 ## Spec
 
 (loosely formatted)
