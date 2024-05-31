@@ -10,6 +10,9 @@ mut:
 	initial  bool = true
 	// Index of first list item to show
 	list_offset int
+	editing bool
+	// Inputter instance for editing todo names
+	editor  &Inputter = &Inputter{}
 }
 
 struct Inputter {
@@ -17,6 +20,12 @@ mut:
 	input  string
 	cursor int
 	len    int
+}
+
+enum InputAction {
+	enter
+	escape
+	@none
 }
 
 fn (mut inp Inputter) clamp_cursor(offset int) {
@@ -50,6 +59,68 @@ fn (mut inp Inputter) insert(ch string) {
 	inp.input = inp.input[..inp.cursor] + ch + inp.input[inp.cursor..]
 	inp.len += 1
 	inp.cursor += 1
+}
+
+fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
+	if e.modifiers == .ctrl {
+		match e.code {
+			.e {
+				inp.cursor = inp.len
+			}
+			.a {
+				inp.cursor = 0
+			}
+			else {
+				return .@none
+			}
+		}
+	}
+
+	if e.modifiers == .alt || e.modifiers == .ctrl {
+		return .@none
+	}
+
+	if e.code == .home {
+		inp.cursor = 0
+		return .@none
+	}
+	if e.code == .end {
+		inp.cursor = inp.len
+	}
+	if e.code == .right {
+		inp.left()
+		return .@none
+	}
+	if e.code == .left {
+		inp.left()
+		return .@none
+	}
+	if e.code == .enter {
+		return .enter
+	}
+	if e.code == .backspace {
+		// delete left
+		if inp.cursor == 0 {
+			return .@none
+		}
+		inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
+		inp.len -= 1
+		inp.cursor -= 1
+		return .@none
+	}
+	if e.code == .escape {
+		return .escape
+	}
+	// insert
+	keycode := u8(e.code)
+	if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
+		if e.modifiers == .shift && (keycode >= 97 && keycode <= 122) {
+			inp.insert((keycode - 32).ascii_str())
+		} else {
+			inp.insert(keycode.ascii_str())
+		}
+	}
+	return .@none
 }
 
 struct Todo {
@@ -117,6 +188,20 @@ fn event(e &tui.Event, x voidptr) {
 		return
 	}
 
+	if app.editing {
+		match app.editor.handle_key(e) {
+			.enter {
+				app.list[app.sel].name = app.editor.input
+				app.editing = false
+			}
+			.escape {
+				app.editing = false
+			}
+			else {}
+		}
+		return
+	}
+
 	if e.code == .tab {
 		app.focus = if app.focus == .input { .list } else { .input }
 		return
@@ -140,68 +225,23 @@ fn event(e &tui.Event, x voidptr) {
 			app.list[app.sel].complete = !app.list[app.sel].complete
 			return
 		}
+		if e.code == .e {
+			app.editing = true
+			app.editor.input = app.list[app.sel].name
+			app.editor.cursor = app.editor.input.len
+			return
+		}
 		return
 	}
 
 	// Input
-	if e.modifiers == .ctrl {
-		match e.code {
-			.e {
-				app.inputter.cursor = app.inputter.len
-			}
-			.a {
-				app.inputter.cursor = 0
-			}
-			else {
-				return
-			}
+	match app.inputter.handle_key(e) {
+		.enter {
+			app.list << Todo.new(app.inputter.input)
+			app.initial = false
+			app.inputter.reset()
 		}
-	}
-	if e.modifiers == .alt || e.modifiers == .ctrl {
-		return
-	}
-
-	if e.code == .home {
-		app.inputter.cursor = 0
-		return
-	}
-	if e.code == .end {
-		app.inputter.cursor = app.inputter.len
-	}
-	if e.code == .right {
-		app.inputter.left()
-		return
-	}
-	if e.code == .left {
-		app.inputter.left()
-		return
-	}
-	if e.code == .enter {
-		app.list << Todo.new(app.inputter.input)
-		app.inputter.reset()
-		app.initial = false
-		return
-	}
-	if e.code == .backspace {
-		// delete left
-		if app.inputter.cursor == 0 {
-			return
-		}
-		inp := app.inputter.input
-		c := app.inputter.cursor
-		app.inputter.input = inp[..c - 1] + inp[c..]
-		app.inputter.len -= 1
-		app.inputter.cursor -= 1
-		return
-	}
-	// insert
-	keycode := u8(e.code)
-	if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
-		if e.modifiers == .shift && (keycode >= 97 && keycode <= 122) {
-			app.inputter.insert((keycode - 32).ascii_str())
-		} else {
-			app.inputter.insert(keycode.ascii_str())
-		}
+		else {}
 	}
 }
 
@@ -232,6 +272,37 @@ fn (mut app App) bordered(sides int, top int, height int) {
 	app.tui.draw_text(full_w - sides, bot, '┘')
 }
 
+// Bordered rectangle positioned in x and y center.
+fn (mut app App) make_modal(width int, height int) {
+	full_w := app.tui.window_width
+	full_h := app.tui.window_height
+
+	// Box
+	x := full_w / 2 - width / 2
+	y := full_h / 2 - height / 2
+	app.bordered(x, y, height)
+
+	// fill background
+	for i in x + 1 .. x + width + 1 {
+		for j in y + 1 .. y + height - 1 {
+			app.tui.draw_text(i, j, ' ')
+		}
+	}
+
+	// Label
+	app.tui.draw_text(x + 2, y + 1, "New name:")
+
+	// Input
+	app.bordered(x + 2, y + 2, 3)
+	app.tui.draw_text(x + 4, y + 3, app.editor.input)
+
+	// Hint
+	app.right_text(x + width, y + height - 2, "enter/esc")
+
+	app.tui.show_cursor()
+	app.tui.set_cursor_position(x + 4 + app.editor.cursor, y + 3)
+}
+
 // Draw horizontally center-aligned text at y
 fn (mut app App) centered_text(y int, text string) {
 	full := app.tui.window_width
@@ -256,32 +327,43 @@ fn frame(x voidptr) {
 
 	sides := 25
 	app.tui.reset()
+
+	if app.editing {
+		app.tui.set_color(r: 100, g: 100, b: 100)
+	}
+
 	app.centered_text(7, 'T O D O M V C')
 
 	// Input
-	if app.focus == .input {
+	if app.focus == .input && !app.editing {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
 	app.bordered(sides, 10, 3)
-	app.tui.reset()
+	if !app.editing {
+		app.tui.reset()
+	}
 	app.tui.draw_text(sides + 2, 11, app.inputter.input)
 
 	// List
-	if app.focus == .list {
+	if app.focus == .list && !app.editing {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
 	app.bordered(sides, 13, 19)
-	app.tui.reset()
+	if !app.editing {
+		app.tui.reset()
+	}
 
 	for i, todo in app.list {
 		if i < app.list_offset {
 			continue
 		}
-		if i == app.sel {
+		if i == app.sel && !app.editing {
 			app.tui.set_bg_color(r: 100, g: 100, b: 100)
 		}
 		app.tui.draw_text(sides + 3, 15 + (i - app.list_offset) * 2, todo.format())
-		app.tui.reset()
+		if !app.editing {
+			app.tui.reset()
+		}
 		if i - app.list_offset == 7 {
 			break
 		}
@@ -292,13 +374,20 @@ fn frame(x voidptr) {
 		app.right_text(-sides, 13 + 19, itemsleft(app.list))
 	}
 
-	app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
-
-	if app.focus == .input {
-		app.tui.show_cursor()
+	if !app.editing {
+		app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
+		if app.focus == .input {
+			app.tui.show_cursor()
+		} else {
+			app.tui.hide_cursor()
+		}
 	} else {
-		app.tui.hide_cursor()
+		app.tui.reset()
+		app.tui.set_bg_color(r: 0, b: 0, g: 0)
+		app.make_modal(60, 7)
 	}
+
+	app.tui.reset()
 	app.tui.flush()
 }
 
