@@ -88,7 +88,7 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 		inp.cursor = inp.len
 	}
 	if e.code == .right {
-		inp.left()
+		inp.right()
 		return .@none
 	}
 	if e.code == .left {
@@ -106,6 +106,15 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 		inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
 		inp.len -= 1
 		inp.cursor -= 1
+		return .@none
+	}
+	if e.code == .delete {
+		// delete right
+		if inp.cursor == inp.input.len {
+			return .@none
+		}
+		inp.input = inp.input[..inp.cursor] + inp.input[inp.cursor+1..]
+		inp.len -= 1
 		return .@none
 	}
 	if e.code == .escape {
