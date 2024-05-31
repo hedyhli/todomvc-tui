@@ -2,21 +2,21 @@ import term.ui as tui
 
 struct App {
 mut:
-	tui &tui.Context = unsafe { nil }
-	inputter &Inputter = &Inputter{}
-	focus Focus = .input
-	list []Todo
-	sel int
-	initial bool = true
+	tui      &tui.Context = unsafe { nil }
+	inputter &Inputter    = &Inputter{}
+	focus    Focus        = .input
+	list     []Todo
+	sel      int
+	initial  bool = true
 	// Index of first list item to show
 	list_offset int
 }
 
 struct Inputter {
 mut:
-	input string
+	input  string
 	cursor int
-	len int
+	len    int
 }
 
 fn (mut inp Inputter) clamp_cursor(offset int) {
@@ -40,7 +40,7 @@ fn (mut inp Inputter) right() {
 
 // Clear
 fn (mut inp Inputter) reset() {
-	inp.input = ""
+	inp.input = ''
 	inp.len = 0
 	inp.cursor = 0
 }
@@ -54,7 +54,7 @@ fn (mut inp Inputter) insert(ch string) {
 
 struct Todo {
 mut:
-	name string
+	name     string
 	complete bool
 }
 
@@ -64,9 +64,9 @@ enum Focus {
 }
 
 fn Todo.new(name string) Todo {
-	return Todo {
-		name: name,
-		complete: false,
+	return Todo{
+		name: name
+		complete: false
 	}
 }
 
@@ -79,23 +79,23 @@ fn itemsleft(todos []Todo) string {
 	}
 
 	match n {
-	0 {
-		return "woohoo! nothing else to do"
-	}
-	1 {
-		return "1 item left"
-	}
-	else {
-		return "${n} items left"
-	}
+		0 {
+			return 'woohoo! nothing else to do'
+		}
+		1 {
+			return '1 item left'
+		}
+		else {
+			return '${n} items left'
+		}
 	}
 }
 
 fn (t Todo) format() string {
 	if t.complete {
-		return "(X) ${t.name}"
+		return '(X) ${t.name}'
 	}
-	return "( ) ${t.name}"
+	return '( ) ${t.name}'
 }
 
 fn (mut app App) update_scroll() {
@@ -146,15 +146,15 @@ fn event(e &tui.Event, x voidptr) {
 	// Input
 	if e.modifiers == .ctrl {
 		match e.code {
-		.e {
-			app.inputter.cursor = app.inputter.len
-		}
-		.a {
-			app.inputter.cursor = 0
-		}
-		else {
-			return
-		}
+			.e {
+				app.inputter.cursor = app.inputter.len
+			}
+			.a {
+				app.inputter.cursor = 0
+			}
+			else {
+				return
+			}
 		}
 	}
 	if e.modifiers == .alt || e.modifiers == .ctrl {
@@ -189,7 +189,7 @@ fn event(e &tui.Event, x voidptr) {
 		}
 		inp := app.inputter.input
 		c := app.inputter.cursor
-		app.inputter.input = inp[..c-1] + inp[c..]
+		app.inputter.input = inp[..c - 1] + inp[c..]
 		app.inputter.len -= 1
 		app.inputter.cursor -= 1
 		return
@@ -197,7 +197,7 @@ fn event(e &tui.Event, x voidptr) {
 	// insert
 	keycode := u8(e.code)
 	if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
-		if e.modifiers ==.shift && (keycode >= 97 && keycode <= 122) {
+		if e.modifiers == .shift && (keycode >= 97 && keycode <= 122) {
 			app.inputter.insert((keycode - 32).ascii_str())
 		} else {
 			app.inputter.insert(keycode.ascii_str())
@@ -212,24 +212,24 @@ fn (mut app App) bordered(sides int, top int, height int) {
 	bot := top + height - 1
 
 	// top
-	app.tui.draw_text(sides, top, "┌")
-	for i in sides+1..(full_w - sides) {
-		app.tui.draw_text(i, top, "─")
+	app.tui.draw_text(sides, top, '┌')
+	for i in sides + 1 .. (full_w - sides) {
+		app.tui.draw_text(i, top, '─')
 	}
-	app.tui.draw_text(full_w - sides, top, "┐")
+	app.tui.draw_text(full_w - sides, top, '┐')
 
 	// sides
-	for j in top + 1 .. (bot) {
-		app.tui.draw_text(sides, j, "│")
-		app.tui.draw_text(full_w - sides, j, "│")
+	for j in top + 1 .. bot {
+		app.tui.draw_text(sides, j, '│')
+		app.tui.draw_text(full_w - sides, j, '│')
 	}
 
 	// bottom
-	app.tui.draw_text(sides, bot, "└")
-	for i in sides+1..(full_w - sides) {
-		app.tui.draw_text(i, bot, "─")
+	app.tui.draw_text(sides, bot, '└')
+	for i in sides + 1 .. (full_w - sides) {
+		app.tui.draw_text(i, bot, '─')
 	}
-	app.tui.draw_text(full_w - sides, bot, "┘")
+	app.tui.draw_text(full_w - sides, bot, '┘')
 }
 
 // Draw horizontally center-aligned text at y
@@ -256,7 +256,7 @@ fn frame(x voidptr) {
 
 	sides := 25
 	app.tui.reset()
-	app.centered_text(7, "T O D O M V C")
+	app.centered_text(7, 'T O D O M V C')
 
 	// Input
 	if app.focus == .input {
@@ -264,7 +264,7 @@ fn frame(x voidptr) {
 	}
 	app.bordered(sides, 10, 3)
 	app.tui.reset()
-	app.tui.draw_text(sides+2, 11, app.inputter.input)
+	app.tui.draw_text(sides + 2, 11, app.inputter.input)
 
 	// List
 	if app.focus == .list {
@@ -280,7 +280,7 @@ fn frame(x voidptr) {
 		if i == app.sel {
 			app.tui.set_bg_color(r: 100, g: 100, b: 100)
 		}
-		app.tui.draw_text(sides + 3, 15 + (i-app.list_offset) * 2, todo.format())
+		app.tui.draw_text(sides + 3, 15 + (i - app.list_offset) * 2, todo.format())
 		app.tui.reset()
 		if i - app.list_offset == 7 {
 			break
