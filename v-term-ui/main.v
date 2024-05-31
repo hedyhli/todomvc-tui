@@ -45,6 +45,13 @@ fn (mut inp Inputter) reset() {
 	inp.cursor = 0
 }
 
+// Insert
+fn (mut inp Inputter) insert(ch string) {
+	inp.input = inp.input[..inp.cursor] + ch + inp.input[inp.cursor..]
+	inp.len += 1
+	inp.cursor += 1
+}
+
 struct Todo {
 mut:
 	name string
@@ -150,7 +157,7 @@ fn event(e &tui.Event, x voidptr) {
 		}
 		}
 	}
-	if e.modifiers != unsafe{nil} {
+	if e.modifiers == .alt || e.modifiers == .ctrl {
 		return
 	}
 
@@ -188,11 +195,14 @@ fn event(e &tui.Event, x voidptr) {
 		return
 	}
 	// insert
-	inp := app.inputter.input
-	c := app.inputter.cursor
-	app.inputter.input = inp[..c] + u8(e.code).ascii_str() + inp[c..]
-	app.inputter.len += 1
-	app.inputter.cursor += 1
+	keycode := u8(e.code)
+	if (keycode >= 32 && keycode <= 64) || (keycode >= 91 && keycode <= 126) {
+		if e.modifiers ==.shift && (keycode >= 97 && keycode <= 122) {
+			app.inputter.insert((keycode - 32).ascii_str())
+		} else {
+			app.inputter.insert(keycode.ascii_str())
+		}
+	}
 }
 
 // Rectangle with borders of fixed height, top margin, and side margin
