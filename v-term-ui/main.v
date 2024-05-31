@@ -388,6 +388,39 @@ fn frame(x voidptr) {
 		app.right_text(-sides, 13 + 19, itemsleft(app.list))
 	}
 
+
+	// Hints
+	keys := {
+		"tab": "switch",
+		"arrows/j/k": "navigate",
+		"space/enter": "toggle complete",
+		"e": "edit item",
+	}
+
+	width := keys.keys().join('').len + keys.keys().len * 2 + keys.values().join(', ').len + "ctrl-c: quit".len
+	mut left := app.tui.window_width / 2 - width / 2
+
+	bottom := app.tui.window_height
+	app.tui.set_color(normal_color)
+	app.tui.bold()
+	app.tui.draw_text(left, bottom, "ctrl-c")
+	app.tui.reset()
+	app.tui.set_color(normal_color)
+	app.tui.draw_text(left + 6, bottom, ": quit")
+
+	left += "ctrl-c: quit".len
+	for key, desc in keys {
+		app.tui.draw_text(left, bottom, ", ")
+		left += 2
+		app.tui.bold()
+		app.tui.draw_text(left, bottom, key)
+		left += key.len
+		app.tui.reset()
+		app.tui.set_color(normal_color)
+		app.tui.draw_text(left, bottom, ": " + desc)
+		left += desc.len + 2
+	}
+
 	if !app.editing {
 		app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
 		if app.focus == .input {
