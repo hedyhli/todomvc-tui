@@ -342,7 +342,13 @@ fn frame(x voidptr) {
 	if !app.editing {
 		app.tui.reset()
 	}
-	app.tui.draw_text(sides + 2, 11, app.inputter.input)
+	if app.inputter.len == 0 {
+		app.tui.set_color(r: 90, g: 90, b: 100)
+		app.tui.draw_text(sides + 2, 11, "What needs to be done?")
+		app.tui.reset()
+	} else {
+		app.tui.draw_text(sides + 2, 11, app.inputter.input)
+	}
 
 	// List
 	if app.focus == .list && !app.editing {
