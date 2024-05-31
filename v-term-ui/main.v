@@ -24,7 +24,6 @@ struct Inputter {
 mut:
 	input  string
 	cursor int
-	len    int
 }
 
 enum InputAction {
@@ -55,14 +54,12 @@ fn (mut inp Inputter) right() {
 // Clear
 fn (mut inp Inputter) reset() {
 	inp.input = ''
-	inp.len = 0
 	inp.cursor = 0
 }
 
 // Insert
 fn (mut inp Inputter) insert(ch string) {
 	inp.input = inp.input[..inp.cursor] + ch + inp.input[inp.cursor..]
-	inp.len += 1
 	inp.cursor += 1
 }
 
@@ -70,7 +67,7 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 	if e.modifiers == .ctrl {
 		match e.code {
 			.e {
-				inp.cursor = inp.len
+				inp.cursor = inp.input.len
 			}
 			.a {
 				inp.cursor = 0
@@ -90,7 +87,7 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 		return .@none
 	}
 	if e.code == .end {
-		inp.cursor = inp.len
+		inp.cursor = inp.input.len
 	}
 	if e.code == .right {
 		inp.right()
@@ -109,7 +106,6 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 			return .@none
 		}
 		inp.input = inp.input[..inp.cursor - 1] + inp.input[inp.cursor..]
-		inp.len -= 1
 		inp.cursor -= 1
 		return .@none
 	}
@@ -119,7 +115,6 @@ fn (mut inp Inputter) handle_key(e &tui.Event) InputAction {
 			return .@none
 		}
 		inp.input = inp.input[..inp.cursor] + inp.input[inp.cursor+1..]
-		inp.len -= 1
 		return .@none
 	}
 	if e.code == .escape {
@@ -354,7 +349,7 @@ fn frame(x voidptr) {
 	app.bordered(sides, 10, 3)
 	app.tui.set_color(normal_color)
 
-	if app.inputter.len == 0 {
+	if app.inputter.input.len == 0 {
 		app.tui.set_color(r: 90, g: 90, b: 100)
 		app.tui.draw_text(sides + 2, 11, "What needs to be done?")
 		app.tui.set_color(normal_color)
@@ -397,7 +392,13 @@ fn frame(x voidptr) {
 		"e": "edit item",
 	}
 
-	width := keys.keys().join('').len + keys.keys().len * 2 + keys.values().join(', ').len + "ctrl-c: quit".len
+	width := (
+		keys.keys().join('').len       // keys
+		+ keys.keys().len * 2          // ": "
+		+ keys.values().join(', ').len // values and joiner
+		+ "ctrl-c: quit".len
+	)
+	// center align the hint line
 	mut left := app.tui.window_width / 2 - width / 2
 
 	bottom := app.tui.window_height
@@ -421,6 +422,7 @@ fn frame(x voidptr) {
 		left += desc.len + 2
 	}
 
+	// Cursor
 	if !app.editing {
 		app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
 		if app.focus == .input {
@@ -429,6 +431,7 @@ fn frame(x voidptr) {
 			app.tui.hide_cursor()
 		}
 	} else {
+		// Modal
 		app.tui.reset()
 		app.tui.set_bg_color(r: 0, b: 0, g: 0)
 		app.make_modal(60, 7)
