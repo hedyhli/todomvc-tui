@@ -339,10 +339,12 @@ fn frame(x voidptr) {
 	sides := 25
 	app.tui.reset()
 
+	mut normal_color := tui.Color{r: 255, g: 255, b: 255}
 	if app.editing {
-		app.tui.set_color(r: 100, g: 100, b: 100)
+		normal_color = tui.Color{r: 100, g: 100, b: 100}
 	}
 
+	app.tui.set_color(normal_color)
 	app.centered_text(7, 'T O D O M V C')
 
 	// Input
@@ -350,13 +352,12 @@ fn frame(x voidptr) {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
 	app.bordered(sides, 10, 3)
-	if !app.editing {
-		app.tui.reset()
-	}
+	app.tui.set_color(normal_color)
+
 	if app.inputter.len == 0 {
 		app.tui.set_color(r: 90, g: 90, b: 100)
 		app.tui.draw_text(sides + 2, 11, "What needs to be done?")
-		app.tui.reset()
+		app.tui.set_color(normal_color)
 	} else {
 		app.tui.draw_text(sides + 2, 11, app.inputter.input)
 	}
@@ -366,9 +367,7 @@ fn frame(x voidptr) {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
 	app.bordered(sides, 13, 19)
-	if !app.editing {
-		app.tui.reset()
-	}
+	app.tui.set_color(normal_color)
 
 	for i, todo in app.list {
 		if i < app.list_offset {
@@ -378,9 +377,7 @@ fn frame(x voidptr) {
 			app.tui.set_bg_color(r: 100, g: 100, b: 100)
 		}
 		app.tui.draw_text(sides + 3, 15 + (i - app.list_offset) * 2, todo.format())
-		if !app.editing {
-			app.tui.reset()
-		}
+		app.tui.reset_bg_color()
 		if i - app.list_offset == 7 {
 			break
 		}
