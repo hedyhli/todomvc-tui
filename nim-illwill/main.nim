@@ -1,47 +1,56 @@
-import os, strutils
 import illwill
 
-# 1. Initialise terminal in fullscreen mode and make sure we restore the state
-# of the terminal state when exiting.
-proc exitProc() {.noconv.} =
-  illwillDeinit()
-  showCursor()
-  quit(0)
+# model ##########################################################
+type Focus = enum
+  input, list
 
-illwillInit(fullscreen=true)
-setControlCHook(exitProc)
-hideCursor()
+type Model = object
+  ## Basic application state
+  t: TerminalBuffer
+  focus: Focus
 
-# 2. We will construct the next frame to be displayed in this buffer and then
-# just instruct the library to display its contents to the actual terminal
-# (double buffering is enabled by default; only the differences from the
-# previous frame will be actually printed to the terminal).
-var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
+proc init(): Model =
+  ## Set up the TUI and initialize a model state
 
-# 3. Display some simple static UI that doesn't change from frame to frame.
-tb.setForegroundColor(fgBlack, true)
-tb.drawRect(0, 0, 40, 5)
-tb.drawHorizLine(2, 38, 3, doubleStyle=true)
+  illwillInit(fullscreen=true)
+  proc exitProc() {.noconv.} =
+    illwillDeinit()
+    showCursor()
+    quit(0)
+  setControlCHook(exitProc)
+  hideCursor()
 
-tb.write(2, 1, fgWhite, "Press any key to display its name")
-tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
-               " or ", fgYellow, "Q", fgWhite, " to quit")
+  var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
 
-# 4. This is how the main event loop typically looks like: we keep polling for
-# user input (keypress events), do something based on the input, modify the
-# contents of the terminal buffer (if necessary), and then display the new
-# frame.
-var line = 4
+  result = Model(t: tb, focus: Focus.input)
+
+  # 3. Display some simple static UI that doesn't change from frame to frame.
+  tb.setForegroundColor(fgWhite, true)
+  tb.drawRect(0, 0, 40, 5)
+  tb.drawHorizLine(2, 38, 3, doubleStyle=true)
+
+  tb.write(2, 1, fgWhite, "Press any key to display its name")
+  tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
+                 " or ", fgYellow, "Q", fgWhite, " to quit")
+  return
+
+# view ###########################################################
+proc view(m: Model) =
+  ## Render entire TUI based on the current state
+  m.t.display()
+
+# update #########################################################
+proc update(m: Model, key: Key) =
+  ## Update the modal state given user key input
+  discard
+
+# main ###########################################################
+var modal = init()
+
 while true:
   var key = getKey()
-  case key
-  of Key.None: discard
-  of Key.Escape, Key.Q: exitProc()
-  else:
-    tb.write(8, 4, ' '.repeat(31))
-    tb.write(2, line, resetStyle, "Key pressed: ", fgGreen, $key)
-    line += 1
-
-  tb.display()
-  sleep(20)
-
+  case key:
+    # Don't redraw until there is a user event
+    of Key.None: continue
+    else: update(modal, key)
+  view(modal)
