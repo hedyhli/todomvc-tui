@@ -44,8 +44,8 @@
     out how to have single-row buttons in textual, and using keybindings to do
     these operations instead is boring and trivial.
 
-  - (probably not) urwid, curses
-  - WIP: blessed
+  - (probably NOT) urwid, curses
+  - (planned) blessed
   - (planned) pytermgui
 
 - (planned) Some lisps, hopefully.
@@ -61,10 +61,24 @@
 - ~~haskell~~ - as much as I'd love to add it to the list, the tooling is
   extremely involved to setup (on my machine) right now.
 
+- another ML?
+
 - V
   - [x] `term.ui`
 
     fully-featured with modal dialog for editing, no mouse support.
+
+## Roadmap
+
+- [x] finish V version
+- [ ] frame for nim illwill
+- [ ] continue with nim
+- [ ] attempt at frame for go vaxis
+- [ ] attempt at rust Zi
+- [ ] finish go vaxis
+- [ ] finish rust Zi
+- [ ] attempt at Zig libvaxis
+- [ ] finish Zig libvaxis
 
 ## Spec
 
