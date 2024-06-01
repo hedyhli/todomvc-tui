@@ -21,6 +21,7 @@ fn (t Todo) format() string {
 	return '( ) ${t.name}'
 }
 
+// Format a string for use in the itemsleft label.
 fn itemsleft(todos []Todo) string {
 	mut n := 0
 	for t in todos {
@@ -234,14 +235,11 @@ fn event(e &tui.Event, x voidptr) {
 // Rectangle with borders of fixed height, top margin, and side margin
 fn (mut app App) bordered(sides int, top int, height int) {
 	full_w := app.tui.window_width
-
 	bot := top + height - 1
 
 	// top
 	app.tui.draw_text(sides, top, '┌')
-	for i in sides + 1 .. (full_w - sides) {
-		app.tui.draw_text(i, top, '─')
-	}
+	app.tui.draw_text(sides + 1, top, '─'.repeat(full_w - sides - sides))
 	app.tui.draw_text(full_w - sides, top, '┐')
 
 	// sides
@@ -252,9 +250,7 @@ fn (mut app App) bordered(sides int, top int, height int) {
 
 	// bottom
 	app.tui.draw_text(sides, bot, '└')
-	for i in sides + 1 .. (full_w - sides) {
-		app.tui.draw_text(i, bot, '─')
-	}
+	app.tui.draw_text(sides + 1, bot,  '─'.repeat(full_w - sides - sides - 1))
 	app.tui.draw_text(full_w - sides, bot, '┘')
 }
 
@@ -266,13 +262,12 @@ fn (mut app App) make_modal(width int, height int) {
 	// Box
 	x := full_w / 2 - width / 2
 	y := full_h / 2 - height / 2
+
 	app.bordered(x, y, height)
 
 	// fill background
-	for i in x + 1 .. x + width + 1 {
-		for j in y + 1 .. y + height - 1 {
-			app.tui.draw_text(i, j, ' ')
-		}
+	for j in y + 1 .. y + height - 1 {
+		app.tui.draw_text(x + 1, j, ' '.repeat(width))
 	}
 
 	// Label
