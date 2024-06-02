@@ -1,11 +1,12 @@
 import std/sequtils
+import std/strformat
 import std/strutils
 
 import illwill
 
 const sides = 30
 
-# todos ##########################################################
+# todo ###########################################################
 type Todo = ref object
   name: string
   complete: bool
@@ -14,58 +15,115 @@ proc newTodo(name: string): Todo =
   Todo(name: name, complete: false)
 
 method toggle(self: Todo) =
+  ## Toggle completion state
   self.complete = not self.complete
 
 method format(self: Todo): string =
+  ## Format this item for display in a todolist.
   return (if self.complete: "(X)" else: "( )") & " " & self.name
 
+# todolist #######################################################
 type Todolist = ref object
-  s: seq[Todo]
-  cur: Natural
+  s: seq[Todo]         ## The list
+  cur: Natural         ## Index of currently highlighted item
+  scroll_top: Natural  ## Index of first item in viewport
 
 type ListAction = enum
   edit
   none
 
 proc initTodolist(): Todolist =
-  Todolist(s: @[], cur: 0)
+  Todolist(s: @[], cur: 0, scroll_top: 0)
 
-method incompleteCount(self: Todolist): int =
-  self.s.filterIt(not it.complete).len()
+method incompleteCount(self: Todolist): Natural =
+  ## Number of incomplete items in the todolist
+  return self.s.filterIt(not it.complete).len()
+
+method itemsleft(self: Todolist): string =
+  let n = self.incompleteCount()
+  case n:
+    of 0: return "woohoo! all done"
+    of 1: return "1 item left"
+    else: return fmt"{n} items left"
 
 method render(self: Todolist, t: var TerminalBuffer, focused: bool) =
-  if focused:
-    t.setForegroundColor(fgRed)
-  else:
-    t.setForegroundColor(fgWhite)
-  t.drawRect(sides, 13, t.width() - sides, 14 + 20)
-  let top = 14
-  for i, item in self.s:
+  ## Render the list items and itemsleft to the terminal buffer
+  # Frame
+  const height = 19
+  let width = t.width() - sides - sides
+  # List has an internal vertical padding of 1 row, items have an empty line
+  # between them
+  const max_items = (height - 1) div 2  ## Max number of items in viewport
+  t.setForegroundColor(if focused: fgRed else: fgWhite)
+  t.drawRect(sides, 13, t.width() - sides, 14 + height)
+  t.write(resetStyle)
+
+  # Itemsleft right aligned
+  if self.s.len > 0:
+    let itemsleft = self.itemsleft()
+    t.write(
+      sides, 14 + height + 1,
+      ' '.repeat(width - itemsleft.len),
+      itemsleft
+    )
+
+  # Items
+  if self.s.len == 0:
+    return
+
+  const top = 14 + 1
+
+  var last_index = self.scroll_top + max_items - 1
+  if last_index >= self.s.len:
+    last_index = self.s.len - 1
+
+  for i in self.scroll_top .. last_index:
+    let item = self.s[i].format()
     if i == self.cur:
       t.write(styleReverse)
-    t.write(sides + 2, top + i*2, item.format())
-    t.write(resetStyle)
 
-method scroll_viewport(self: Todolist) =
-  ## Ensure current item is visible in viewport
+    t.write(
+      sides + 2, top + (i - self.scroll_top) * 2,
+      item, resetStyle,
+      # Erase the remaining line
+      ' '.repeat(width - 2 - item.len)
+    )
 
-method select_by(self: Todolist, offset: int) =
+method scroll_viewport(self: var Todolist) =
+  ## Ensure current item is visible in viewport.
+  # XXX: from self.render
+  let items = 9
+
+  # Bottom item in viewport
+  if self.cur >= self.scroll_top + items:
+    self.scroll_top = self.cur - items + 1
+  # Top item in viewport
+  elif self.cur < self.scroll_top:
+    self.scroll_top = self.cur
+
+method select_by(self: var Todolist, offset: int) =
+  ## Change the current selection index by an offset and ensure it is visible
+  ## in viewport.
   var new: int = self.cur + offset
+
   if new > self.s.len - 1:
     new = self.s.len - 1
   elif new < 0:
     new = 0
+
+  self.cur = new
   self.scroll_viewport()
 
-method add(self: Todolist, todo: Todo) =
+method add(self: var Todolist, todo: Todo) =
   self.s.add(todo)
   self.cur = self.s.len - 1
+  self.scroll_viewport()
 
-method handle_key(self: Todolist, key: Key): ListAction =
+method handle_key(self: var Todolist, key: Key): ListAction =
   case key:
-    of Key.Down:
+    of Key.Down, Key.J:
       self.select_by(1)
-    of Key.Up:
+    of Key.Up, Key.K:
       self.select_by(-1)
     of Key.CtrlD:
       self.select_by(4)
@@ -95,6 +153,7 @@ type InputAction = enum
   none
 
 method render(self: Input, t: var TerminalBuffer, focused: bool) =
+  ## Render the input and cursor to the terminal buffer
   let width = t.width() - sides - sides
 
   if focused:
@@ -105,17 +164,31 @@ method render(self: Input, t: var TerminalBuffer, focused: bool) =
   t.drawRect(sides, 10, t.width() - sides, 10 + 2)
   t.resetAttributes()
 
+  if not focused:
+    t.write(sides + 2, 10 + 1, self.s, ' '.repeat(width - 2 - self.s.len - 1))
+    return
+
   if self.cursor < self.s.len:
     t.write(
       sides + 2, 10 + 1,
+      # Input before cursor
       self.s[0..self.cursor - 1],
+      # Cursor
       styleReverse, self.s[self.cursor] & "",
-      resetStyle,   self.s[self.cursor + 1 .. self.s.len-1]
+      # Rest of input
+      resetStyle,   self.s[self.cursor + 1 .. self.s.len-1],
+      # Rest of the line
+      ' '.repeat(width - 2 - self.s.len - 1)
     )
-    # Rest of the line
-    t.write(sides + 2 + self.s.len, 10 + 1, resetStyle, ' '.repeat(width - 2 - self.s.len - 1))
   else:
-    t.write(sides + 2, 10 + 1, self.s, styleReverse, " ", resetStyle, ' '.repeat(width - 2 - self.s.len - 1))
+    t.write(
+      sides + 2, 10 + 1,
+      self.s,
+      # Cursor
+      styleReverse, " ",
+      # Rest of line
+      resetStyle, ' '.repeat(width - 2 - self.s.len - 1)
+    )
 
 method clear(self: var Input) =
   self.s = ""
@@ -141,12 +214,14 @@ method insert(self: var Input, ch: string) =
 
 method delete_left(self: var Input) =
   ## Backspace key
-  self.s = self.s[0..self.cursor-2] & self.s[self.cursor..self.s.len-1]
-  self.cursor -= 1
+  if self.cursor > 0:
+    self.s = self.s[0..self.cursor-2] & self.s[self.cursor..self.s.len-1]
+    self.cursor -= 1
 
 method delete_right(self: var Input) =
   ## Delete key
-  self.s = self.s[0..self.cursor-1] & self.s[self.cursor+1..self.s.len-1]
+  if self.cursor < self.s.len:
+    self.s = self.s[0..self.cursor-1] & self.s[self.cursor+1..self.s.len-1]
 
 method handle_key(self: var Input, key: Key): InputAction =
   case key:
@@ -167,8 +242,9 @@ method handle_key(self: var Input, key: Key): InputAction =
     of Key.Enter:
       return InputAction.enter
     else:
-      var char = $key.char
-      self.insert(char)
+      var code = ord(key.char)
+      if (code >= 32 and code <= 64 + 26) or (code >= 91 and code <= 126):
+        self.insert($key.char)
   return InputAction.none
 
 # model ##########################################################

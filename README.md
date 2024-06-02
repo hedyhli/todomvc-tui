@@ -32,7 +32,9 @@
   - (planned) a C lib with bindings
 
 - Nim
-  - (planned) illwill
+  - [x] illwill
+    
+    Similar in terms of functionality (& limitations) as the V-lang implementation.
 
 - C
   - (planned) ncurses, possibly
@@ -71,8 +73,8 @@
 ## Roadmap
 
 - [x] finish V version
-- [ ] frame for nim illwill
-- [ ] continue with nim
+- [x] frame for nim illwill
+- [x] continue with nim
 - [ ] attempt at frame for go vaxis
 - [ ] attempt at rust Zi
 - [ ] finish go vaxis
