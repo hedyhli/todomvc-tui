@@ -76,7 +76,9 @@
 - [x] frame for nim illwill
 - [x] continue with nim
 - [ ] attempt at frame for go vaxis
+- [ ] finalize UI and formalize it into spec
 - [ ] attempt at rust Zi
+- [ ] update older impl to new UI spec
 - [ ] finish go vaxis
 - [ ] finish rust Zi
 - [ ] attempt at Zig libvaxis
