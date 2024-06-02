@@ -243,6 +243,7 @@ method handle_key(self: var Input, key: Key): InputAction =
       return InputAction.enter
     else:
       var code = ord(key.char)
+      # Rather fragile method to check if key is printable
       if (code >= 32 and code <= 64 + 26) or (code >= 91 and code <= 126):
         self.insert($key.char)
   return InputAction.none
@@ -274,15 +275,12 @@ proc init() =
 # view ###########################################################
 proc view(m: Model) =
   ## Render entire TUI based on the current state
-
   # Center-aligned header
   const title = "T O D O M V C"
   m.t.write(int(m.t.width() / 2 - title.len / 2), 7, title)
 
-  # Input
+  # Widgets
   m.input.render(m.t, m.focus == Focus.input)
-
-  # List
   m.list.render(m.t, m.focus == Focus.list)
 
   m.t.display()
@@ -302,7 +300,8 @@ proc update(m: Model, key: Key) =
           m.list.add(newTodo(m.input.s))
           m.input.clear()
         else: discard
-    of Focus.list: discard m.list.handle_key(key)
+    of Focus.list:
+      discard m.list.handle_key(key)
 
 # main ###########################################################
 var model = Model(
@@ -314,6 +313,7 @@ var model = Model(
 
 init()
 
+# Quite the 'MVC' as part of TodoMVC-TUI!
 while true:
   view(model)
   var key = getKey()
