@@ -155,6 +155,11 @@ type InputAction = enum
 method render(self: Input, t: var TerminalBuffer, focused: bool) =
   ## Render the input and cursor to the terminal buffer
   let width = t.width() - sides - sides
+  const before = 10   ## Number of rows before this widget
+  const top = 1       ## Top padding
+  const left = 2      ## Left padding
+  const placeholder = "What needs to be done?"
+  let placeholderStyle = fgBlue
 
   if focused:
     t.setForegroundColor(fgRed)
@@ -165,12 +170,32 @@ method render(self: Input, t: var TerminalBuffer, focused: bool) =
   t.resetAttributes()
 
   if not focused:
-    t.write(sides + 2, 10 + 1, self.s, ' '.repeat(width - 2 - self.s.len - 1))
+    if self.s.len == 0:
+      # Just placeholder
+      t.write(
+        sides + left, before + top,
+        placeholderStyle, placeholder,
+        resetStyle, ' '.repeat(width - left - placeholder.len - 1)
+      )
+    else:
+      # Just input
+      t.write(sides + left, before + top, self.s, ' '.repeat(width - left - self.s.len - 1))
     return
 
+  if self.s.len == 0:
+    # Cursor + placeholder
+    t.write(
+      sides + left, before + top,
+      styleReverse, placeholder[0] & "", resetStyle,
+      placeholderStyle, placeholder[1..^1],
+      resetStyle, ' '.repeat(width - left - placeholder.len - 1)
+    )
+    return
+
+  # Cursor + input
   if self.cursor < self.s.len:
     t.write(
-      sides + 2, 10 + 1,
+      sides + left, before + top,
       # Input before cursor
       self.s[0..self.cursor - 1],
       # Cursor
@@ -178,16 +203,16 @@ method render(self: Input, t: var TerminalBuffer, focused: bool) =
       # Rest of input
       resetStyle,   self.s[self.cursor + 1 .. self.s.len-1],
       # Rest of the line
-      ' '.repeat(width - 2 - self.s.len - 1)
+      ' '.repeat(width - left - self.s.len - 1)
     )
   else:
     t.write(
-      sides + 2, 10 + 1,
+      sides + left, before + top,
       self.s,
       # Cursor
       styleReverse, " ",
       # Rest of line
-      resetStyle, ' '.repeat(width - 2 - self.s.len - 1)
+      resetStyle, ' '.repeat(width - left - self.s.len - 1)
     )
 
 method clear(self: var Input) =
