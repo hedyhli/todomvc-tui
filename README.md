@@ -13,7 +13,7 @@
 
   - (planned) bubbletea
 
-  - (planned) vaxis
+  - [x] vaxis
 
 - Rust
 

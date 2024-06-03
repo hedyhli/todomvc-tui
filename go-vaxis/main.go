@@ -109,6 +109,13 @@ type Model struct {
 	list Todolist
 }
 
+// TODO: Make use of incremental re-rendering
+// - Store the component widgets and windows into Model context
+// - model.Root <- redraw entire terminal (for resizing)
+// - model.Input (inner) <- input events
+// - model.List (inner) <- list changes & input enter
+// - model.Itemsleft <- list item changes
+
 // UI //////////////////////////////////////////////////
 var DefaultStyle = vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
 var FocusedStyle = vaxis.Style{Foreground: vaxis.RGBColor(200, 0, 0), Background: vaxis.Color(0)}
