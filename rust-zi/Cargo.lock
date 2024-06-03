@@ -444,7 +444,6 @@ dependencies = [
 name = "todomvc-tui"
 version = "0.1.0"
 dependencies = [
- "unicode-width",
  "zi",
  "zi-term",
 ]
