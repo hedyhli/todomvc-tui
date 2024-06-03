@@ -116,6 +116,8 @@ var PlaceholderStyle = vaxis.Style{Foreground: vaxis.RGBColor(100, 100, 100)}
 const Placeholder = "What needs to be done?"
 const (
 	uiSides = 25
+	uiHeaderHeight = 10
+	uiListHeight = 20
 )
 
 func drawCentered(text string, row int, win vaxis.Window) {
@@ -188,12 +190,17 @@ func main() {
 		// Centered column with uiSides on each side
 		main := root.New(uiSides, 0, root.Width - uiSides - uiSides, root.Height)
 
+		row := 0
+
 		// Header
 		drawCentered("T O D O M V C", 5, main)
 
+		row += uiHeaderHeight
+
 		// Input
-		inputOuterWin := main.New(0, 10, main.Width, 3)
-		inputWin := main.New(2, 11, main.Width - 2 - 1, 1)
+		inputOuterWin := main.New(0, row, main.Width, 3)
+		inputWin := main.New(2, row + 1, main.Width - 2 - 1, 1)
+
 		if model.focus == FocusInput {
 			vaxisBorder.All(inputOuterWin, FocusedStyle)
 			inputWin.ShowCursor(inputWid.CursorPosition(), 0, vaxis.CursorBeamBlinking)
@@ -202,26 +209,26 @@ func main() {
 			vx.HideCursor()
 		}
 
-
 		if len(inputWid.String()) == 0 {
-			// Placeholder
 			inputWin.Println(0, seg(Placeholder, PlaceholderStyle))
 		} else {
 			inputWid.Draw(inputWin)
 		}
+		row += 3
 
 		// Todolist
-		listHeight := 20
-		listOuterWin := main.New(0, 10 + 3, main.Width, listHeight)
+		listOuterWin := main.New(0, row, main.Width, uiListHeight)
 		if model.focus == FocusList {
 			vaxisBorder.All(listOuterWin, FocusedStyle)
 		} else {
 			vaxisBorder.All(listOuterWin, DefaultStyle)
 		}
-		listWin := main.New(1, 10 + 3 + 1, main.Width - 2, listHeight - 2)
-		model.list.draw(listWin)
 
-		itemsleftWin := main.New(0, 10 + 3 + listHeight, main.Width - 1, 1)
+		listWin := main.New(1, row + 1, main.Width - 2, uiListHeight - 2)
+		model.list.draw(listWin)
+		row += uiListHeight
+
+		itemsleftWin := main.New(0, row, main.Width - 1, 1)
 		drawRight(model.list.fmtItemsleft(), 0, itemsleftWin)
 
 		vx.Render()
