@@ -80,15 +80,50 @@ impl Component for App {
     }
 
     fn view(&self) -> Layout {
-        Container::new(FlexDirection::Column, [
-            Item::fixed(9)(Text::with(TextProperties::new()
-                .align(TextAlign::Centre)
-                .content(String::from("Hi")),
-            )),
-            Item::fixed(3)(Text::with(TextProperties::new()
-                .align(TextAlign::Centre)
-                .content(String::from("Hi")),
-            ))
+        let sides = 25;
+        let container = Container::column([
+            Item::auto(Text::with(TextProperties::new().content("Item 1"))),
+            Item::auto(Text::with(TextProperties::new().content("Item 2"))),
+        ]);
+        return container.into();
+        // Container::new(FlexDirection::Row, [
+        //     Item::fixed(sides)(Text::with(TextProperties::new())),
+        //     Item::auto(
+                Container::new(FlexDirection::Column, [
+                Item::auto(
+                    Text::with(TextProperties::new()
+                        .align(TextAlign::Centre)
+                        // .style(Style::default())
+                        .content(String::from("header"))
+                    )
+                ),
+                Item::auto(
+                    // Border::with(BorderProperties::new(||
+                        Text::with(TextProperties::new()
+                            .align(TextAlign::Left)
+                            // .style(Style::default())
+                            .content(String::from(" Input here"))
+                        )
+                // ))
+                ),
+                Item::auto(Text::with(TextProperties::new())),
+                // Item::fixed(19)(
+                //     Border::with(BorderProperties::new(||
+                //         Text::with(TextProperties::new()
+                //             .align(TextAlign::Left)
+                //             .style(Style::default())
+                //             .content(String::from("List here"))
+                //         )))
+                // ),
+                // Item::fixed(1)(
+                //     Text::with(TextProperties::new()
+                //         .align(TextAlign::Right)
+                //         .style(Style::default())
+                //         .content(String::from("items left")))
+                // ),
+                // Item::auto(Text::with(TextProperties::new().content("hi"))),
+            // ])),
+            // Item::fixed(sides)(Text::with(TextProperties::new())),
         ]).into()
     }
 
