@@ -1,12 +1,23 @@
 package main
 
 import (
-	"strings"
 	"git.sr.ht/~rockorager/vaxis"
 	"git.sr.ht/~rockorager/vaxis/widgets/textinput"
 )
 
-var wordList = "foo,bar,baz"
+type Focus int
+
+const (
+	FocusInput Focus = iota
+	FocusList
+)
+
+type model struct {
+	focus Focus
+}
+
+var PlaceholderStyle = vaxis.Style{ Foreground: vaxis.RGBColor(100, 100, 100) }
+const Placeholder = "What needs to be done?"
 
 func main() {
 	vx, err := vaxis.New(vaxis.Options{})
@@ -15,26 +26,8 @@ func main() {
 	}
 	defer vx.Close()
 
-	words := strings.Split(wordList, ",")
-
-	complete := func(input string) []string {
-		i := strings.LastIndex(input, " ")
-
-		lastWord := input
-		if i > 0 {
-			lastWord = input[i+1:]
-		}
-		lower := strings.ToLower(lastWord)
-		res := make([]string, 0, len(wordList))
-		trimmed := strings.TrimSuffix(input, lastWord)
-		for _, word := range words {
-			if strings.HasPrefix(word, lower) {
-				res = append(res, trimmed+word)
-			}
-		}
-		return res
-	}
-	ti := textinput.NewMenuComplete(complete)
+	ti := textinput.New()
+	ti.HideCursor = true
 	for ev := range vx.Events() {
 		switch ev := ev.(type) {
 		case vaxis.Key:
@@ -45,7 +38,12 @@ func main() {
 		}
 		ti.Update(ev)
 		vx.Window().Clear()
-		ti.Draw(vx.Window())
+		vx.Window().ShowCursor(ti.CursorPosition(), 0, vaxis.CursorBeamBlinking)
+		if len(ti.String()) == 0 {
+			vx.Window().Println(0, vaxis.Segment{Text: Placeholder, Style: PlaceholderStyle})
+		} else {
+			ti.Draw(vx.Window())
+		}
 		vx.Render()
 	}
 }
