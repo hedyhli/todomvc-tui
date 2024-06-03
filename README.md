@@ -22,7 +22,10 @@
     fully featured except mouse support and a "proper" modal UI for editing
 
   - (maybe?) cursive, requires ncurses
-  - (planned) zi
+  - zi -- interestingly, there's a "todos" example in the Zi repository where
+    the code explicitly declares a "TodoMvc" component. However, it does not fully
+    implement what this specification requires, nor looks like the actual TodoMVC,
+    it does however provide many extra features than these implementations.
 
 - Zig
   - (planned) libvaxis
