@@ -16,10 +16,13 @@ var FocusedStyle = vaxis.Style{Foreground: vaxis.RGBColor(200, 0, 0), Background
 // Style of the placeholder for the input
 var PlaceholderStyle = vaxis.Style{Foreground: vaxis.RGBColor(100, 100, 100)}
 const Placeholder = "What needs to be done?"
+const CursorStyle = vaxis.CursorBeamBlinking
 const (
 	uiSides = 25
 	uiHeaderHeight = 10
-	uiListHeight = 20
+	uiListHeight = 20 // Includes border
+	uiEditWidth = 45
+	uiEditHeight = 5 // Includes border
 )
 
 
@@ -87,6 +90,7 @@ type ListRedrawType = int
 const (
 	ListRedrawNone ListRedrawType = iota
 	ListRedrawAll
+	ListRedrawEdit
 )
 
 // fmtItemsleft returns a string for display in the itemsleft componenet.
@@ -187,6 +191,8 @@ func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
 		case "space", "Enter":
 			tl.l[tl.cur].toggle()
 			redrawType = ListRedrawAll
+		case "e":
+			redrawType = ListRedrawEdit
 		}
 	}
 	return
@@ -200,11 +206,16 @@ func (tl *Todolist) add(name string) {
 	tl.ensureVisible()
 }
 
+func (tl *Todolist) saveEdit(newName string) {
+	tl.l[tl.cur].name = newName
+}
+
 // App /////////////////////////////////////////////////
 type Focus int
 const (
 	FocusInput Focus = iota
 	FocusList
+	FocusEdit
 )
 
 type Model struct {
@@ -217,9 +228,13 @@ type Model struct {
 		input vaxis.Window
 		list vaxis.Window
 		itemsleft vaxis.Window
+		modalOuter vaxis.Window
+		modal vaxis.Window
+		edit vaxis.Window
 	}
 	wid struct {
 		input *textinput.Model
+		edit *textinput.Model
 	}
 }
 
@@ -244,6 +259,17 @@ func (model *Model) drawRoot(vx *vaxis.Vaxis) {
 	drawCentered("T O D O M V C", 5, mainWin)
 	row += uiHeaderHeight
 
+	// Edit modal
+	model.win.modalOuter = mainWin.New(
+		root.Width / 2 - uiEditWidth,
+		root.Height / 2 - uiEditHeight,
+		uiEditWidth,
+		uiEditHeight,
+	)
+	model.win.modal = model.win.modalOuter.New(1, 1, uiEditWidth - 2, uiEditHeight - 2)
+	model.win.edit = model.win.modal.New(0, 1, model.win.modal.Width, 1)
+	model.drawEdit(vx)
+
 	// Input border
 	inputOuterWin := mainWin.New(0, row, mainWin.Width, 3)
 	model.win.input = mainWin.New(2, row + 1, mainWin.Width - 2 - 1, 1)
@@ -267,13 +293,29 @@ func (model *Model) drawRoot(vx *vaxis.Vaxis) {
 	model.drawItemsleft()
 }
 
+func (model *Model) drawEdit(vx *vaxis.Vaxis) {
+	model.win.modalOuter.Clear()
+	if model.focus == FocusEdit {
+		vaxisBorder.All(model.win.modalOuter, DefaultStyle)
+
+		win := model.win.edit
+		widget := model.wid.edit
+
+		model.win.modal.Println(0, vaxis.Segment{Text: "New name:"})
+		drawRight("enter/esc", 2, model.win.modal)
+
+		widget.Draw(model.win.edit)
+		win.ShowCursor(widget.CursorPosition(), 0, CursorStyle)
+	}
+}
+
 func (model *Model) drawInput(vx *vaxis.Vaxis) {
 	win := model.win.input
 	widget := model.wid.input
 	win.Clear()
 
 	if model.focus == FocusInput {
-		win.ShowCursor(widget.CursorPosition(), 0, vaxis.CursorBeamBlinking)
+		win.ShowCursor(widget.CursorPosition(), 0, CursorStyle)
 	} else {
 		vx.HideCursor()
 	}
@@ -304,8 +346,12 @@ func main() {
 
 	inputWid := textinput.New()
 	inputWid.HideCursor = true
-
 	model.wid.input = inputWid
+
+	editWid := textinput.New()
+	editWid.HideCursor = true
+	model.wid.edit = editWid
+
 	model.drawRoot(vx)
 
 	for ev := range vx.Events() {
@@ -328,7 +374,8 @@ func main() {
 				// thing is fast enough for now.
 				model.drawRoot(vx)
 			default:
-				if model.focus == FocusInput {
+				switch model.focus {
+				case FocusInput:
 					inputWid.Update(ev)
 					switch ev.String() {
 					case "Enter":
@@ -338,11 +385,32 @@ func main() {
 						model.drawItemsleft()
 					}
 					model.drawInput(vx)
-				} else {
+				case FocusList:
 					switch model.list.update(ev) {
 					case ListRedrawAll:
 						model.list.draw(model.win.list)
 						model.drawItemsleft()
+					case ListRedrawEdit:
+						editWid.SetContent(model.list.l[model.list.cur].name)
+						model.focus = FocusEdit
+						model.drawEdit(vx)
+					}
+				case FocusEdit:
+					editWid.Update(ev)
+					switch ev.String() {
+					case "Enter":
+						model.list.saveEdit(editWid.String())
+						model.win.modal.Clear()
+						model.list.draw(model.win.list)
+						model.focus = FocusList
+						model.drawRoot(vx)
+					case "Escape":
+						model.win.modal.Clear()
+						model.list.draw(model.win.list)
+						model.focus = FocusList
+						model.drawRoot(vx)
+					default:
+						model.drawEdit(vx)
 					}
 				}
 			}
