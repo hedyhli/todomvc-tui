@@ -9,9 +9,40 @@ import (
 	"git.sr.ht/~rockorager/vaxis/widgets/textinput"
 )
 
+
+var DefaultStyle = vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
+var FocusedStyle = vaxis.Style{Foreground: vaxis.RGBColor(200, 0, 0), Background: vaxis.Color(0)}
+var PlaceholderStyle = vaxis.Style{Foreground: vaxis.RGBColor(100, 100, 100)}
+const Placeholder = "What needs to be done?"
+const (
+	uiSides = 25
+	uiHeaderHeight = 10
+	uiListHeight = 20
+)
+
+
 // Utils ///////////////////////////////////////////////
 func seg(text string, style vaxis.Style) vaxis.Segment {
 	return vaxis.Segment{Text: text, Style: style}
+}
+
+func drawCentered(text string, row int, win vaxis.Window) {
+	win.Println(row, vaxis.Segment{
+		Text: strings.Repeat(" ", win.Width / 2 - len(text) / 2) + text,
+	})
+}
+
+func drawRight(text string, row int, win vaxis.Window) {
+	win.Println(row, vaxis.Segment{
+		Text: strings.Repeat(" ", win.Width - len(text)) + text,
+	})
+}
+
+func drawLeft(text string, row int, win vaxis.Window, style vaxis.Style) {
+	win.Println(row, seg(
+		text + strings.Repeat(" ", win.Width - len(text)),
+		style,
+	))
 }
 
 // Data ////////////////////////////////////////////////
@@ -40,6 +71,12 @@ type Todolist struct {
 	top int
 }
 
+type ListRedrawType = int
+const (
+	ListRedrawNone ListRedrawType = iota
+	ListRedrawAll
+)
+
 func (tl *Todolist) fmtItemsleft() string {
 	if len(tl.l) == 0 {
 		return ""
@@ -59,6 +96,7 @@ func (tl *Todolist) fmtItemsleft() string {
 }
 
 func (tl *Todolist) draw(win vaxis.Window) {
+	win.Clear()
 	row := 0
 	for i, t := range tl.l {
 		style := vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
@@ -74,21 +112,26 @@ func (tl *Todolist) draw(win vaxis.Window) {
 	}
 }
 
-func (tl *Todolist) update(ev vaxis.Event) {
+func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
+	redrawType = ListRedrawNone
 	if key, ok := ev.(vaxis.Key); ok {
 		switch key.String() {
 		case "Down", "j":
 			if tl.cur < len(tl.l) - 1 {
 				tl.cur += 1
+				redrawType = ListRedrawAll
 			}
 		case "Up", "k":
 			if tl.cur > 0 {
 				tl.cur -= 1
+				redrawType = ListRedrawAll
 			}
 		case "space", "Enter":
 			tl.l[tl.cur].toggle()
+			redrawType = ListRedrawAll
 		}
 	}
+	return
 }
 
 func (tl *Todolist) add(name string) {
@@ -107,43 +150,82 @@ const (
 type Model struct {
 	focus Focus
 	list Todolist
+	win struct {
+		// Windows that might require updating independently
+		root vaxis.Window
+		input vaxis.Window
+		list vaxis.Window
+		itemsleft vaxis.Window
+	}
+	wid struct {
+		input *textinput.Model
+	}
 }
-
-// TODO: Make use of incremental re-rendering
-// - Store the component widgets and windows into Model context
-// - model.Root <- redraw entire terminal (for resizing)
-// - model.Input (inner) <- input events
-// - model.List (inner) <- list changes & input enter
-// - model.Itemsleft <- list item changes
 
 // UI //////////////////////////////////////////////////
-var DefaultStyle = vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
-var FocusedStyle = vaxis.Style{Foreground: vaxis.RGBColor(200, 0, 0), Background: vaxis.Color(0)}
-var PlaceholderStyle = vaxis.Style{Foreground: vaxis.RGBColor(100, 100, 100)}
-const Placeholder = "What needs to be done?"
-const (
-	uiSides = 25
-	uiHeaderHeight = 10
-	uiListHeight = 20
-)
+func (model *Model) drawRoot(vx *vaxis.Vaxis) {
+	root := vx.Window()
+	root.Clear()
+	model.win.root = root
 
-func drawCentered(text string, row int, win vaxis.Window) {
-	win.Println(row, vaxis.Segment{
-		Text: strings.Repeat(" ", win.Width / 2 - len(text) / 2) + text,
-	})
+	inputBorder := DefaultStyle
+	listBorder := FocusedStyle
+	if model.focus == FocusInput {
+		inputBorder = FocusedStyle
+		listBorder = DefaultStyle
+	}
+
+	// Centered column with uiSides on each side
+	main := root.New(uiSides, 0, root.Width - uiSides - uiSides, root.Height)
+	row := 0
+
+	// Header
+	drawCentered("T O D O M V C", 5, main)
+	row += uiHeaderHeight
+
+	// Input border
+	inputOuterWin := main.New(0, row, main.Width, 3)
+	model.win.input = main.New(2, row + 1, main.Width - 2 - 1, 1)
+	vaxisBorder.All(inputOuterWin, inputBorder)
+	// Input
+	model.drawInput(vx)
+	row += 3
+
+	// Todolist border
+	listOuterWin := main.New(0, row, main.Width, uiListHeight)
+	model.win.list = main.New(1, row + 1, main.Width - 2, uiListHeight - 2)
+	vaxisBorder.All(listOuterWin, listBorder)
+	// Todolist
+	model.list.draw(model.win.list)
+	row += uiListHeight
+
+	// Itemsleft
+	itemsleftWin := main.New(0, row, main.Width - 1, 1)
+	model.win.itemsleft = itemsleftWin
+	model.drawItemsleft()
 }
 
-func drawRight(text string, row int, win vaxis.Window) {
-	win.Println(row, vaxis.Segment{
-		Text: strings.Repeat(" ", win.Width - len(text)) + text,
-	})
+func (model *Model) drawInput(vx *vaxis.Vaxis) {
+	win := model.win.input
+	widget := model.wid.input
+	win.Clear()
+
+	if model.focus == FocusInput {
+		win.ShowCursor(widget.CursorPosition(), 0, vaxis.CursorBeamBlinking)
+	} else {
+		vx.HideCursor()
+	}
+
+	if len(widget.String()) == 0 {
+		win.Println(0, seg(Placeholder, PlaceholderStyle))
+	} else {
+		widget.Draw(win)
+	}
 }
 
-func drawLeft(text string, row int, win vaxis.Window, style vaxis.Style) {
-	win.Println(row, seg(
-		text + strings.Repeat(" ", win.Width - len(text)),
-		style,
-	))
+func (model *Model) drawItemsleft() {
+	model.win.itemsleft.Clear()
+	drawRight(model.list.fmtItemsleft(), 0, model.win.itemsleft)
 }
 
 func main() {
@@ -161,6 +243,9 @@ func main() {
 	inputWid := textinput.New()
 	inputWid.HideCursor = true
 
+	model.wid.input = inputWid
+	model.drawRoot(vx)
+
 	for ev := range vx.Events() {
 		switch ev := ev.(type) {
 		case vaxis.Key:
@@ -174,69 +259,32 @@ func main() {
 				case FocusList:
 					model.focus = FocusInput
 				}
-			}
-		}
-
-		if model.focus == FocusInput {
-			inputWid.Update(ev)
-			if key, ok := ev.(vaxis.Key); ok {
-				switch key.String() {
-				case "Enter":
-					model.list.add(inputWid.String())
-					inputWid.SetContent("")
+				// Technically only borders need to be redrawn, but borders are
+				// not stored in the model context and just redrawing the whole
+				// thing is fast enough for now.
+				model.drawRoot(vx)
+			default:
+				if model.focus == FocusInput {
+					inputWid.Update(ev)
+					switch ev.String() {
+					case "Enter":
+						model.list.add(inputWid.String())
+						inputWid.SetContent("")
+						model.list.draw(model.win.list)
+						model.drawItemsleft()
+					}
+					model.drawInput(vx)
+				} else {
+					switch model.list.update(ev) {
+					case ListRedrawAll:
+						model.list.draw(model.win.list)
+						model.drawItemsleft()
+					}
 				}
 			}
-		} else {
-			model.list.update(ev)
+		case vaxis.Resize:
+			model.drawRoot(vx)
 		}
-
-		// Render
-		root := vx.Window()
-		root.Clear()
-
-		// Centered column with uiSides on each side
-		main := root.New(uiSides, 0, root.Width - uiSides - uiSides, root.Height)
-
-		row := 0
-
-		// Header
-		drawCentered("T O D O M V C", 5, main)
-
-		row += uiHeaderHeight
-
-		// Input
-		inputOuterWin := main.New(0, row, main.Width, 3)
-		inputWin := main.New(2, row + 1, main.Width - 2 - 1, 1)
-
-		if model.focus == FocusInput {
-			vaxisBorder.All(inputOuterWin, FocusedStyle)
-			inputWin.ShowCursor(inputWid.CursorPosition(), 0, vaxis.CursorBeamBlinking)
-		} else {
-			vaxisBorder.All(inputOuterWin, DefaultStyle)
-			vx.HideCursor()
-		}
-
-		if len(inputWid.String()) == 0 {
-			inputWin.Println(0, seg(Placeholder, PlaceholderStyle))
-		} else {
-			inputWid.Draw(inputWin)
-		}
-		row += 3
-
-		// Todolist
-		listOuterWin := main.New(0, row, main.Width, uiListHeight)
-		if model.focus == FocusList {
-			vaxisBorder.All(listOuterWin, FocusedStyle)
-		} else {
-			vaxisBorder.All(listOuterWin, DefaultStyle)
-		}
-
-		listWin := main.New(1, row + 1, main.Width - 2, uiListHeight - 2)
-		model.list.draw(listWin)
-		row += uiListHeight
-
-		itemsleftWin := main.New(0, row, main.Width - 1, 1)
-		drawRight(model.list.fmtItemsleft(), 0, itemsleftWin)
 
 		vx.Render()
 	}
