@@ -11,7 +11,9 @@ import (
 
 
 var DefaultStyle = vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
+// Style of the border when the component is focused.
 var FocusedStyle = vaxis.Style{Foreground: vaxis.RGBColor(200, 0, 0), Background: vaxis.Color(0)}
+// Style of the placeholder for the input
 var PlaceholderStyle = vaxis.Style{Foreground: vaxis.RGBColor(100, 100, 100)}
 const Placeholder = "What needs to be done?"
 const (
@@ -22,6 +24,8 @@ const (
 
 
 // Utils ///////////////////////////////////////////////
+// seg is a shortcut function that returns a new Segment with a given text and
+// style.
 func seg(text string, style vaxis.Style) vaxis.Segment {
 	return vaxis.Segment{Text: text, Style: style}
 }
@@ -32,12 +36,14 @@ func drawCentered(text string, row int, win vaxis.Window) {
 	})
 }
 
+// Draw a right-aligned text at a given row with style in the window.
 func drawRight(text string, row int, win vaxis.Window) {
 	win.Println(row, vaxis.Segment{
 		Text: strings.Repeat(" ", win.Width - len(text)) + text,
 	})
 }
 
+// Draw a left-aligned text at a given row with style in the window.
 func drawLeft(text string, row int, win vaxis.Window, style vaxis.Style) {
 	win.Println(row, seg(
 		text + strings.Repeat(" ", win.Width - len(text)),
@@ -55,6 +61,7 @@ func (t *Todo) toggle() {
 	t.complete = !t.complete
 }
 
+// fmt returns a formatted string for display on each item in the Todolist.
 func (t *Todo) fmt() (s string) {
 	s = "( ) "
 	if t.complete {
@@ -64,6 +71,7 @@ func (t *Todo) fmt() (s string) {
 	return
 }
 
+// The state for the Todolist component.
 type Todolist struct {
 	l []Todo
 	cur int
@@ -73,12 +81,15 @@ type Todolist struct {
 	inView int
 }
 
+// Message types sent from list update method to the main handler to determine
+// which parts of the list to redraw.
 type ListRedrawType = int
 const (
 	ListRedrawNone ListRedrawType = iota
 	ListRedrawAll
 )
 
+// fmtItemsleft returns a string for display in the itemsleft componenet.
 func (tl *Todolist) fmtItemsleft() string {
 	if len(tl.l) == 0 {
 		return ""
@@ -91,12 +102,13 @@ func (tl *Todolist) fmtItemsleft() string {
 		}
 	}
 	switch n {
-	case 0: return "woohoo! nothing left!"
+	case 0: return "woohoo! all done."
 	case 1: return "1 item left"
 	default: return fmt.Sprintf("%d items left", n)
 	}
 }
 
+// Draw todo items in the given window
 func (tl *Todolist) draw(win vaxis.Window) {
 	win.Clear()
 	row := 0
@@ -142,6 +154,8 @@ func (tl *Todolist) selectOffset(offset int) (changed bool) {
 	return
 }
 
+// update reacts to a given vaxis TUI event and updates the selection of the
+// Todolist.
 func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
 	redrawType = ListRedrawNone
 	if key, ok := ev.(vaxis.Key); ok {
@@ -178,6 +192,8 @@ func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
 	return
 }
 
+// Add a new item to the todolist and updates selection and scroll to select
+// the new item.
 func (tl *Todolist) add(name string) {
 	tl.l = append(tl.l, Todo{name: name, complete: false})
 	tl.cur = len(tl.l) - 1
@@ -186,7 +202,6 @@ func (tl *Todolist) add(name string) {
 
 // App /////////////////////////////////////////////////
 type Focus int
-
 const (
 	FocusInput Focus = iota
 	FocusList
@@ -196,7 +211,8 @@ type Model struct {
 	focus Focus
 	list Todolist
 	win struct {
-		// Windows that might require updating independently
+		// Windows that require updating independently, they are initialized in
+		// the drawRoot method.
 		root vaxis.Window
 		input vaxis.Window
 		list vaxis.Window
@@ -221,24 +237,24 @@ func (model *Model) drawRoot(vx *vaxis.Vaxis) {
 	}
 
 	// Centered column with uiSides on each side
-	main := root.New(uiSides, 0, root.Width - uiSides - uiSides, root.Height)
+	mainWin := root.New(uiSides, 0, root.Width - uiSides - uiSides, root.Height)
 	row := 0
 
 	// Header
-	drawCentered("T O D O M V C", 5, main)
+	drawCentered("T O D O M V C", 5, mainWin)
 	row += uiHeaderHeight
 
 	// Input border
-	inputOuterWin := main.New(0, row, main.Width, 3)
-	model.win.input = main.New(2, row + 1, main.Width - 2 - 1, 1)
+	inputOuterWin := mainWin.New(0, row, mainWin.Width, 3)
+	model.win.input = mainWin.New(2, row + 1, mainWin.Width - 2 - 1, 1)
 	vaxisBorder.All(inputOuterWin, inputBorder)
 	// Input
 	model.drawInput(vx)
 	row += 3
 
 	// Todolist border
-	listOuterWin := main.New(0, row, main.Width, uiListHeight)
-	model.win.list = main.New(1, row + 1, main.Width - 2, uiListHeight - 2)
+	listOuterWin := mainWin.New(0, row, mainWin.Width, uiListHeight)
+	model.win.list = mainWin.New(1, row + 1, mainWin.Width - 2, uiListHeight - 2)
 	model.list.inView = (uiListHeight - 2) / 3
 	vaxisBorder.All(listOuterWin, listBorder)
 	// Todolist
@@ -246,7 +262,7 @@ func (model *Model) drawRoot(vx *vaxis.Vaxis) {
 	row += uiListHeight
 
 	// Itemsleft
-	itemsleftWin := main.New(0, row, main.Width - 1, 1)
+	itemsleftWin := mainWin.New(0, row, mainWin.Width - 1, 1)
 	model.win.itemsleft = itemsleftWin
 	model.drawItemsleft()
 }
