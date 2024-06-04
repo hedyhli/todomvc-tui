@@ -314,6 +314,8 @@ func main() {
 			switch ev.String() {
 			case "Ctrl+c":
 				return
+			case "Ctrl+l":
+				model.drawRoot(vx)
 			case "Tab":
 				switch model.focus {
 				case FocusInput:
