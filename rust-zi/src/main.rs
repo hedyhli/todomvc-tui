@@ -10,6 +10,69 @@ use zi::{
     prelude::*,
 };
 use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
+use zi_term::Result;
 
 #[derive(Default, Debug)]
 enum Focus {
@@ -81,14 +144,9 @@ impl Component for App {
 
     fn view(&self) -> Layout {
         let sides = 25;
-        let container = Container::column([
-            Item::auto(Text::with(TextProperties::new().content("Item 1"))),
-            Item::auto(Text::with(TextProperties::new().content("Item 2"))),
-        ]);
-        return container.into();
-        // Container::new(FlexDirection::Row, [
-        //     Item::fixed(sides)(Text::with(TextProperties::new())),
-        //     Item::auto(
+        Container::new(FlexDirection::Row, [
+            Item::fixed(sides)(Text::with(TextProperties::new())),
+            Item::auto(
                 Container::new(FlexDirection::Column, [
                 Item::auto(
                     Text::with(TextProperties::new()
@@ -98,32 +156,32 @@ impl Component for App {
                     )
                 ),
                 Item::auto(
-                    // Border::with(BorderProperties::new(||
+                    Border::with(BorderProperties::new(||
                         Text::with(TextProperties::new()
                             .align(TextAlign::Left)
-                            // .style(Style::default())
+                            .style(Style::default())
                             .content(String::from(" Input here"))
                         )
-                // ))
+                ))
                 ),
                 Item::auto(Text::with(TextProperties::new())),
-                // Item::fixed(19)(
-                //     Border::with(BorderProperties::new(||
-                //         Text::with(TextProperties::new()
-                //             .align(TextAlign::Left)
-                //             .style(Style::default())
-                //             .content(String::from("List here"))
-                //         )))
-                // ),
-                // Item::fixed(1)(
-                //     Text::with(TextProperties::new()
-                //         .align(TextAlign::Right)
-                //         .style(Style::default())
-                //         .content(String::from("items left")))
-                // ),
-                // Item::auto(Text::with(TextProperties::new().content("hi"))),
-            // ])),
-            // Item::fixed(sides)(Text::with(TextProperties::new())),
+                Item::fixed(19)(
+                    Border::with(BorderProperties::new(||
+                        Text::with(TextProperties::new()
+                            .align(TextAlign::Left)
+                            .style(Style::default())
+                            .content(String::from("List here"))
+                        )))
+                ),
+                Item::fixed(1)(
+                    Text::with(TextProperties::new()
+                        .align(TextAlign::Right)
+                        .style(Style::default())
+                        .content(String::from("items left")))
+                ),
+                Item::auto(Text::with(TextProperties::new().content("hi"))),
+            ])),
+            Item::fixed(sides)(Text::with(TextProperties::new())),
         ]).into()
     }
 
