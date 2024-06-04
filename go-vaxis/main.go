@@ -69,6 +69,8 @@ type Todolist struct {
 	cur int
 	// Top of viewport during scrolling
 	top int
+	// Number of items fully in view
+	inView int
 }
 
 type ListRedrawType = int
@@ -98,18 +100,46 @@ func (tl *Todolist) fmtItemsleft() string {
 func (tl *Todolist) draw(win vaxis.Window) {
 	win.Clear()
 	row := 0
-	for i, t := range tl.l {
+
+	i := tl.top
+	last := tl.top + tl.inView
+	if last > len(tl.l) {
+		last = len(tl.l)
+	}
+	for i < last {
 		style := vaxis.Style{Foreground: vaxis.Color(0), Background: vaxis.Color(0)}
 		if i == tl.cur {
 			style.Background = vaxis.RGBColor(60, 60, 65)
 		}
 		win.Println(row, seg(strings.Repeat(" ", win.Width), style))
 		row += 1
-		drawLeft("  " + t.fmt(), row, win, style)
+		drawLeft("  " + tl.l[i].fmt(), row, win, style)
 		row += 1
 		win.Println(row, seg(strings.Repeat(" ", win.Width), style))
 		row += 1
+
+		i += 1
 	}
+}
+
+// Updates scroll to ensure current selection is visible
+func (tl *Todolist) ensureVisible() {
+	if tl.cur < tl.top {
+		tl.top = tl.cur
+	} else if tl.cur >= tl.top + tl.inView {
+		tl.top = tl.cur - tl.inView + 1
+	}
+}
+
+func (tl *Todolist) selectOffset(offset int) (changed bool) {
+	changed = false
+	newCur := tl.cur + offset
+	if newCur >= 0 && newCur < len(tl.l) {
+		tl.cur = newCur
+		tl.ensureVisible()
+		changed = true
+	}
+	return
 }
 
 func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
@@ -117,13 +147,27 @@ func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
 	if key, ok := ev.(vaxis.Key); ok {
 		switch key.String() {
 		case "Down", "j":
-			if tl.cur < len(tl.l) - 1 {
-				tl.cur += 1
+			if tl.selectOffset(1) {
 				redrawType = ListRedrawAll
 			}
 		case "Up", "k":
-			if tl.cur > 0 {
-				tl.cur -= 1
+			if tl.selectOffset(-1) {
+				redrawType = ListRedrawAll
+			}
+		case "Ctrl+d":
+			if tl.selectOffset(tl.inView / 2) {
+				redrawType = ListRedrawAll
+			}
+		case "Ctrl+u":
+			if tl.selectOffset(-tl.inView / 2) {
+				redrawType = ListRedrawAll
+			}
+		case "Page_Down":
+			if tl.selectOffset(tl.inView) {
+				redrawType = ListRedrawAll
+			}
+		case "Page_Up":
+			if tl.selectOffset(-tl.inView) {
 				redrawType = ListRedrawAll
 			}
 		case "space", "Enter":
@@ -137,6 +181,7 @@ func (tl *Todolist) update(ev vaxis.Event) (redrawType ListRedrawType) {
 func (tl *Todolist) add(name string) {
 	tl.l = append(tl.l, Todo{name: name, complete: false})
 	tl.cur = len(tl.l) - 1
+	tl.ensureVisible()
 }
 
 // App /////////////////////////////////////////////////
@@ -194,6 +239,7 @@ func (model *Model) drawRoot(vx *vaxis.Vaxis) {
 	// Todolist border
 	listOuterWin := main.New(0, row, main.Width, uiListHeight)
 	model.win.list = main.New(1, row + 1, main.Width - 2, uiListHeight - 2)
+	model.list.inView = (uiListHeight - 2) / 3
 	vaxisBorder.All(listOuterWin, listBorder)
 	// Todolist
 	model.list.draw(model.win.list)
