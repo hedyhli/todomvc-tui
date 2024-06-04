@@ -5,7 +5,7 @@
 ## Implementations
 
 - Go
-  - [x] tview
+  - [x] tview (2.0 without validation, i1.0, u1.5)
 
   - gocui
 
@@ -13,19 +13,23 @@
 
   - (planned) bubbletea
 
-  - [x] vaxis
+  - [x] vaxis (1.0 without buttons, i1.1, u1.0)
 
 - Rust
 
-  - [x] ratatui
+  - [x] ratatui (1.2, i1.1, u1.0)
 
     fully featured except mouse support and a "proper" modal UI for editing
 
   - (maybe?) cursive, requires ncurses
-  - zi -- interestingly, there's a "todos" example in the Zi repository where
-    the code explicitly declares a "TodoMvc" component. However, it does not fully
-    implement what this specification requires, nor looks like the actual TodoMVC,
-    it does however provide many extra features than these implementations.
+
+  - zi (-, -, u1.5)
+
+    interestingly, there's a "todos" example in the Zi repository where the code
+    explicitly declares a "TodoMvc" component. However, it does not fully
+    implement what this specification requires, nor looks like the actual
+    TodoMVC, it does however provide many extra features than these
+    implementations.
 
 - Zig
   - (planned) libvaxis
@@ -35,7 +39,7 @@
   - (planned) a C lib with bindings
 
 - Nim
-  - [x] illwill
+  - [x] illwill (1.0, i1.1, u1.0)
     
     Similar in terms of functionality (& limitations) as the V-lang implementation.
 
@@ -43,7 +47,7 @@
   - (planned) ncurses, possibly
 
 - Python
-  - [x] Textual
+  - [x] Textual (2.0 without buttons, i1.0, u1.5)
 
     Does not have buttons for "mark all as completed" etc because I can't figure
     out how to have single-row buttons in textual, and using keybindings to do
@@ -69,7 +73,7 @@
 - another ML?
 
 - V
-  - [x] `term.ui`
+  - [x] `term.ui` (1.0, i1.0, u1.0)
 
     fully-featured with modal dialog for editing, no mouse support.
 
@@ -92,9 +96,12 @@
 (loosely formatted)
 
 Implementations marked with `[x]` are deemed "complete". They should satisfy
-_most_ of the requirements as listed below, in two or three areas more so,
-possibly because the framework/library used provides certain functionality out
-of the box.
+at least version 1.0 as described below.
+
+The "version" numbering next to bullet points gives a sense of the priority of a
+given feature for implementations. Ideally, an implementation that targets a
+version number of X should implement ALL features tagged with version X and
+lower.
 
 ### code
 
@@ -106,33 +113,50 @@ of the box.
 - Documentation on functions may be added
 - A binary, if produced, or a project name if required, should be named
   "todomvc-tui"
-- directories are named `<language>-<framework>` where language is the full
+- Directories are named `<language>-<framework>` where language is the full
   language name, followed by the framework/library used that does the primary
   heavy-lifting for the terminal.
 
 ### functionality
 
-- Show N incomplete as text
-- Button to confirm edit with modals
-- Input validation - must be non-empty string (whitespace trimmed)
-- Button to clear all completed
-- Button to mark all completed
+- 0.1: Show N incomplete as text
+- 1.0: Button to confirm edit with modals
+- 1.2: Button to clear all completed
+- 1.2: Button to mark all completed
+- 2.0: Input validation - must be non-empty string (whitespace trimmed)
 
 ### UI
 
-- Solid borders for input and todolist.
-- Hero with large padding top/bottom
-- Center main section except key hints
-- main section max-width 100
-- New todo: height (excl borders) 3
-- N items left, right aligned under the todolist
+These **must** be followed, by convention and for consistency.
+
+Version numbers prefixed with `u` are tracked separately.
+
+- u0.1: Hero with large padding top/bottom
+- u0.1: New todo: height (including borders) 3
+- u1.0: Solid borders for input and todolist.
+- u1.0: Different style/color of borders determines focus
+- u1.0: Centered main section
+- u1.5: main section dynamically sized with ...
+- u1.0: itemsleft right aligned under the todolist
 
 ### UX
 
-- Keys to navigate
-- Keys to toggle complete
-- `e` to edit
-- optionally key to delete
-- Mouse to switch focus
-- Input field should support basic emacs keys, optionally mouse support
-- Scrollable list view
+- 0.1: Keys to navigate
+- 0.1: Input field should support basic emacs keys
+- 0.1: Keys to toggle complete
+- 1.0: Scrollable list view
+- 1.1: `e` to edit
+- 2.0: key to delete
+- 2.0: Mouse to switch focus
+- 2.0: Input field mouse support
+
+### Internals
+
+These version numbers prefixed with `i` are tracked separately.
+
+- i1.0: structs for Todo
+- i1.1: structs and methods for both Todo and Todolist
+- i1.5: refactor input, list, and itemsleft as separate widgets with their own
+  lifecycle/update methods
+- i2.1: incremental re-renders (rather than re-drawing the entire screen on each
+  update), or an alternative performance optimization of renders
