@@ -31,6 +31,8 @@
     TodoMVC, it does however provide many extra features than these
     implementations.
 
+  - (planned) tui-realm
+
 - Zig
   - (planned) libvaxis
 
@@ -70,7 +72,9 @@
 - ~~haskell~~ - as much as I'd love to add it to the list, the tooling is
   extremely involved to setup (on my machine) right now.
 
-- another ML?
+- ocaml
+
+  - (planned) minttea
 
 - V
   - [x] `term.ui` (1.0, i1.0, u1.0)
