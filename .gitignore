@@ -2,3 +2,4 @@ todomvc-tui
 todomvc_tui
 target
 _build
+zig-cache
