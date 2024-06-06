@@ -1,0 +1,17 @@
+(lang dune 3.15)
+
+(name todomvc_tui)
+
+(generate_opam_files true)
+
+(source
+ (github hedyhli/todomvc-tui))
+(authors "~hedy <hedy.dev@protonmail.com>")
+(maintainers "~hedy <hedy.dev@protonmail.com>")
+(license ../LICENSE)
+(documentation https://github.com/hedyhli/todomvc-tui)
+
+(package
+ (name todomvc_tui)
+ (synopsis "TodoMVC TUI implementation in OCaml using Lwd + Nottui")
+ (depends ocaml dune lwd nottui notty))
