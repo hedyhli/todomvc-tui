@@ -1,0 +1,4 @@
+(executable
+ (public_name todomvc-tui)
+ (name main)
+ (libraries minttea leaves spices str))

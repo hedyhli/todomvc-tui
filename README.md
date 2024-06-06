@@ -116,7 +116,7 @@ lower.
 - Tests may be added, and may or may not be in the same file
 - Documentation on functions may be added
 - A binary, if produced, or a project name if required, should be named
-  "todomvc-tui"
+  "todomvc-tui". Use "todomvc_tui" if dashes are not allowed.
 - Directories are named `<language>-<framework>` where language is the full
   language name, followed by the framework/library used that does the primary
   heavy-lifting for the terminal.
