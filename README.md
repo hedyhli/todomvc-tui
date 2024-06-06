@@ -74,7 +74,9 @@
 
 - ocaml
 
-  - (planned) minttea
+  - (STALLED) minttea
+    
+    waiting for 0.0.3 to be released (https://github.com/leostera/minttea/issues/54)
 
 - V
   - [x] `term.ui` (1.0, i1.0, u1.0)
