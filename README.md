@@ -34,7 +34,7 @@
   - (planned) tui-realm
 
 - Zig
-  - (planned) libvaxis
+  - libvaxis
 
 - Lua (but written with Fennel, probably)
   - (planned) ltui
@@ -94,9 +94,9 @@
 - [ ] finalize UI and formalize it into spec
 - [x] attempt at rust Zi
 - [ ] update older impl to new UI spec
-- [ ] finish go vaxis
+- [x] finish go vaxis
 - [ ] finish rust Zi
-- [ ] attempt at Zig libvaxis
+- [x] attempt at Zig libvaxis
 - [ ] finish Zig libvaxis
 
 ## Spec
