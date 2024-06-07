@@ -41,9 +41,12 @@
   - (planned) a C lib with bindings
 
 - Nim
+
   - [x] illwill (1.0, i1.1, u1.0)
     
     Similar in terms of functionality (& limitations) as the V-lang implementation.
+
+  - (planned) nimwave
 
 - C
   - (planned) ncurses, possibly
@@ -72,18 +75,20 @@
 - ~~haskell~~ - as much as I'd love to add it to the list, the tooling is
   extremely involved to setup (on my machine) right now.
 
-- ocaml
+- OCaml
 
   - (STALLED) minttea
     
     waiting for 0.0.3 to be released (https://github.com/leostera/minttea/issues/54)
 
-  - lwd + nottui
+  - (STALLED) lwd + nottui
 
 - V
   - [x] `term.ui` (1.0, i1.0, u1.0)
 
     fully-featured with modal dialog for editing, no mouse support.
+
+- (planned) C++
 
 ## Roadmap
 
