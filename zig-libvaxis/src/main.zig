@@ -175,6 +175,8 @@ pub fn main() !void {
             .height = .expand,
         });
 
+        mainWin.setCursorShape(.beam_blink);
+
         const header = mainWin.child(.{
             .x_off = 0,
             .y_off = 0,
@@ -198,6 +200,10 @@ pub fn main() !void {
             .border = .{ .where = .all, .style = .{ .fg = .{ .index = if (model.focus == .input) uiFocusedColor else 255 } } },
         });
         inputWig.draw(inputWin);
+
+        if (model.focus != .input) {
+            mainWin.hideCursor();
+        }
 
         rows += 3;
 
