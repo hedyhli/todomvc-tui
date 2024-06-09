@@ -137,16 +137,13 @@ pub fn main() !void {
     }
     const alloc = gpa.allocator();
 
-    // Initalize a tty
     var tty = try vaxis.Tty.init();
     defer tty.deinit();
-
     // Use a buffered writer for better performance. There are a lot of writes
     // in the render loop and this can have a significant savings
     var buffered_writer = tty.bufferedWriter();
     const writer = buffered_writer.writer().any();
 
-    // Initialize Vaxis
     var vx = try vaxis.init(alloc, .{
         .kitty_keyboard_flags = .{ .report_events = true },
     });
@@ -157,9 +154,6 @@ pub fn main() !void {
         .tty = &tty,
     };
     try loop.init();
-
-    // Start the read loop. This puts the terminal in raw mode and begins
-    // reading user input
     try loop.start();
     defer loop.stop();
 
@@ -182,7 +176,6 @@ pub fn main() !void {
     while (true) {
         // nextEvent blocks until an event is in the queue
         const event = loop.nextEvent();
-        // log.debug("event: {}", .{event});
         switch (event) {
             .key_press => |key| {
                 if (key.matches('c', .{ .ctrl = true })) {
