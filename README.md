@@ -149,8 +149,8 @@ Version numbers prefixed with `u` are tracked separately.
 - u1.0: Solid borders for input and todolist.
 - u1.0: Different style/color of borders determines focus
 - u1.0: Centered main section
-- u1.5: main section dynamically sized with ...
 - u1.0: itemsleft right aligned under the todolist
+- u1.5: main section dynamically sized with ...
 
 ### UX
 
