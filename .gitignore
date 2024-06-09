@@ -4,3 +4,4 @@ target
 _build
 zig-cache
 zig-out
+.zig-cache
