@@ -29,7 +29,7 @@ const Todo = struct {
         } else {
             try display.appendSlice("( ) ");
         }
-        for (self.name[0..]) |char| {
+        for (self.name) |char| {
             try display.append(char);
         }
         return display.items;
@@ -43,12 +43,14 @@ const Todolist = struct {
     ///Scroll offset
     top_idx: usize = 0,
 
+    ///Initialize an empty list with std.heap.page_allocator for ArrayList(Todo).
     fn new() Todolist {
         return Todolist{ .l = ArrayList(Todo).init(std.heap.page_allocator) };
     }
 
     ///Add new todo by name and select it.
     fn add(self: *Todolist, name: []const u8) !void {
+        if (name.len == 0) return;
         try self.l.append(Todo{ .name = name, .complete = false });
         self.cur = self.l.items.len - 1;
     }
