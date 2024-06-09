@@ -76,6 +76,29 @@ const Todolist = struct {
             },
         };
     }
+
+    fn select(self: *Todolist, offset: i8) void {
+        const newCur: i8 = @as(i8, @intCast(self.cur)) + offset;
+        const max: i8 = @as(i8, @intCast(self.l.items.len - 1));
+        self.cur = @as(usize, @intCast(if (newCur < 0) 0 else if (newCur > max) max else newCur));
+    }
+
+    fn update(self: *Todolist, ev: Event) void {
+        switch (ev) {
+            .key_press => |key| {
+                if (key.codepoint == vaxis.Key.down or key.matches('j', .{})) {
+                    self.select(1);
+                } else if (key.codepoint == vaxis.Key.up or key.matches('k', .{})) {
+                    self.select(-1);
+                } else if (key.codepoint == vaxis.Key.space or key.codepoint == vaxis.Key.enter) {
+                    self.l.items[self.cur].toggle();
+                }
+            },
+            else => {
+                unreachable;
+            },
+        }
+    }
 };
 
 const Model = struct {
@@ -172,11 +195,21 @@ pub fn main() !void {
                         .list => .input,
                         else => model.focus,
                     };
-                } else if (key.matches(vaxis.Key.enter, .{})) {
-                    try model.list.add(try inputWig.toOwnedSlice());
-                    inputWig.clearAndFree();
                 } else {
-                    try inputWig.update(.{ .key_press = key });
+                    switch (model.focus) {
+                        .input => {
+                            if (key.matches(vaxis.Key.enter, .{})) {
+                                try model.list.add(try inputWig.toOwnedSlice());
+                                inputWig.clearAndFree();
+                            } else {
+                                try inputWig.update(.{ .key_press = key });
+                            }
+                        },
+                        .list => {
+                            model.list.update(event);
+                        },
+                        .editing => {},
+                    }
                 }
             },
 
@@ -245,7 +278,11 @@ pub fn main() !void {
         { // List items
             var i: u8 = 0;
             for (model.list.l.items) |todo| {
-                _ = try listWin.printSegment(Segment{ .text = try todo.fmt() }, .{ .row_offset = i * 2 });
+                var style: vaxis.Cell.Style = .{};
+                if (model.list.cur == i) {
+                    style.bg = .{ .index = 240 };
+                }
+                _ = try listWin.printSegment(Segment{ .text = try todo.fmt(), .style = style }, .{ .row_offset = i * 2 });
                 i += 1;
             }
         }
