@@ -256,7 +256,12 @@ pub fn main() !void {
             .height = .{ .limit = 3 },
             .border = .{ .where = .all, .style = .{ .fg = .{ .index = if (model.focus == .input) uiFocusedColor else 255 } } },
         });
-        inputWig.draw(inputWin);
+        const inputInner = inputWin.child(.{
+            .x_off = 1,
+            .y_off = 0,
+            .border = .{ .where = .none },
+        });
+        inputWig.draw(inputInner);
 
         if (model.focus != .input) {
             mainWin.hideCursor();
