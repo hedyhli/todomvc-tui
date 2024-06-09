@@ -52,6 +52,28 @@ const Todolist = struct {
         try self.l.append(Todo{ .name = name, .complete = false });
         self.cur = self.l.items.len - 1;
     }
+
+    ///The text to display for the itemsleft widget.
+    fn itemsleft(self: *Todolist) ![]const u8 {
+        if (self.l.items.len == 0) return "";
+
+        var display = ArrayList(u8).init(std.heap.page_allocator);
+        var n: usize = 0;
+        for (self.l.items) |todo| {
+            if (!todo.complete) n += 1;
+        }
+        return switch (n) {
+            0 => "woohoo! nothing left to do",
+            1 => "1 item left",
+            else => {
+                var buf: [256]u8 = undefined;
+                const count = try std.fmt.bufPrint(&buf, "{}", .{n});
+                try display.appendSlice(count);
+                try display.appendSlice(" items left");
+                return display.items;
+            },
+        };
+    }
 };
 
 const Model = struct {
@@ -218,7 +240,7 @@ pub fn main() !void {
 
         rows += uiListHeight;
 
-        {
+        { // List items
             var i: u8 = 0;
             for (model.list.l.items) |todo| {
                 _ = try listWin.printSegment(Segment{ .text = try todo.fmt() }, .{ .row_offset = i * 2 });
@@ -226,6 +248,7 @@ pub fn main() !void {
             }
         }
 
+        // Itemsleft
         const itemsleftWin = mainWin.child(.{
             .x_off = 0,
             .y_off = rows,
@@ -234,7 +257,18 @@ pub fn main() !void {
             .border = .{ .where = .none },
         });
 
-        _ = try itemsleftWin.printSegment(Segment{ .text = "X items left" }, .{ .row_offset = 0 });
+        {
+            const itemsleftStr = try model.list.itemsleft();
+            var padCount: usize = mainWin.width - itemsleftStr.len;
+            var displayStr = ArrayList(u8).init(std.heap.page_allocator);
+            while (padCount > 0) : (padCount -= 1) {
+                try displayStr.append(' ');
+            }
+            for (itemsleftStr) |char| {
+                try displayStr.append(char);
+            }
+            _ = try itemsleftWin.printSegment(Segment{ .text = displayStr.items }, .{ .row_offset = 0 });
+        }
 
         // Render the screen
         try vx.render(writer);
