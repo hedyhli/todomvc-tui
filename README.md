@@ -7,23 +7,27 @@
 - Go
   - [x] tview (2.0 without validation, i1.0, u1.5)
 
-  - gocui
+    Note that the edit modal does not apply a darkened background.
+
+  - gocui (possibly 1.0, UI was made before the specification solidified)
 
     Supports adding and toggling
 
   - (planned) bubbletea
 
-  - [x] vaxis (1.0 without buttons, i1.1, u1.0)
+  - [x] vaxis (1.1 without buttons, i1.1, u1.1) edit modal does not apply a
+    darkened background
 
 - Rust
 
   - [x] ratatui (1.2, i1.1, u1.0)
 
-    fully featured except mouse support and a "proper" modal UI for editing
+    fully featured except mouse support and a "proper" modal UI for editing.
+    Note, editing is supported by borrowing the newtodo input widget.
 
   - (maybe?) cursive, requires ncurses
 
-  - zi (-, -, u1.5)
+  - (STALLED) zi (-, -, u1.5)
 
     interestingly, there's a "todos" example in the Zi repository where the code
     explicitly declares a "TodoMvc" component. However, it does not fully
@@ -34,7 +38,7 @@
   - (planned) tui-realm
 
 - Zig
-  - libvaxis (1.0, i1.1, i1.0) - without list scrolling and editing yet
+  - libvaxis (1.0, i1.1, i1.0)
 
 - Lua (but written with Fennel, probably)
   - (planned) ltui
@@ -44,7 +48,9 @@
 
   - [x] illwill (1.0, i1.1, u1.0)
     
-    Similar in terms of functionality (& limitations) as the V-lang implementation.
+    Similar in terms of functionality (& limitations) as the V-lang
+    implementation. One difference being that modal dialog for editing is not
+    implemented.
 
   - (planned) nimwave
 
@@ -84,9 +90,9 @@
   - (STALLED) lwd + nottui
 
 - V
-  - [x] `term.ui` (1.0, i1.0, u1.0)
+  - [x] `term.ui` (1.1, i1.1, u1.1)
 
-    fully-featured with modal dialog for editing, no mouse support.
+    fully-featured with modal dialog (with darkened background) for editing, no mouse support.
 
 - (planned) C++
 
@@ -150,6 +156,8 @@ Version numbers prefixed with `u` are tracked separately.
 - u1.0: Different style/color of borders determines focus
 - u1.0: Centered main section
 - u1.0: itemsleft right aligned under the todolist
+- u1.1: Edit modal applies a background overlay on top of other contents outside
+  modal.
 - u1.5: main section dynamically sized with ...
 
 ### UX

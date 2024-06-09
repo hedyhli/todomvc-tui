@@ -1,5 +1,9 @@
 # V `term.ui`
 
+> *The language feels like a brain child of Go, with borrowed ideas from most notably Rust and Zig.*
+
+---
+
 I was oblivious of the historical drama concerning the V community when starting
 out, and while working on this implementation I felt that it was quite
 delightful to use. It's a pity a language like V with such potential had such a
