@@ -307,8 +307,12 @@ fn frame(x voidptr) {
 	app.tui.clear()
 
 	sides := 25
-	app.tui.reset()
+	list_height := 19
+	header_height := 10
 
+	mut row := 0
+
+	app.tui.reset()
 	mut normal_color := tui.Color{r: 255, g: 255, b: 255}
 	if app.editing {
 		// Make everything else dimmed when the modal is shown.
@@ -317,28 +321,32 @@ fn frame(x voidptr) {
 
 	app.tui.set_color(normal_color)
 	app.centered_text(7, 'T O D O M V C')
+	row += header_height + 1
 
 	// Input
 	if app.focus == .input && !app.editing {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
-	app.bordered(sides, 10, 3)
+	app.bordered(sides, row, 3)
+	row += 1
 	app.tui.set_color(normal_color)
 	// Input text
 	if app.inputter.input.len == 0 {
 		app.tui.set_color(r: 90, g: 90, b: 100)
-		app.tui.draw_text(sides + 2, 11, "What needs to be done?")
+		app.tui.draw_text(sides + 2, row, "What needs to be done?")
 		app.tui.set_color(normal_color)
 	} else {
-		app.tui.draw_text(sides + 2, 11, app.inputter.input)
+		app.tui.draw_text(sides + 2, row, app.inputter.input)
 	}
+	row += 2
 
 	// List
 	if app.focus == .list && !app.editing {
 		app.tui.set_color(r: 200, g: 0, b: 50)
 	}
-	app.bordered(sides, 13, 19)
+	app.bordered(sides, row, 19)
 	app.tui.set_color(normal_color)
+	row += 2
 	// List items
 	for i, todo in app.list {
 		if i < app.list_offset {
@@ -347,16 +355,17 @@ fn frame(x voidptr) {
 		if i == app.sel && !app.editing {
 			app.tui.set_bg_color(r: 100, g: 100, b: 100)
 		}
-		app.tui.draw_text(sides + 3, 15 + (i - app.list_offset) * 2, todo.format())
+		app.tui.draw_text(sides + 3, row + (i - app.list_offset) * 2, todo.format())
 		app.tui.reset_bg_color()
 		if i - app.list_offset == 7 {
 			break
 		}
 	}
+	row += list_height - 2
 
 	// Itemsleft
 	if !app.initial {
-		app.right_text(-sides, 13 + 19, itemsleft(app.list))
+		app.right_text(-sides, row, itemsleft(app.list))
 	}
 
 	// Hints
@@ -398,7 +407,7 @@ fn frame(x voidptr) {
 
 	// Cursor
 	if !app.editing {
-		app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, 11)
+		app.tui.set_cursor_position(sides + 2 + app.inputter.cursor, header_height + 2)
 		if app.focus == .input {
 			app.tui.show_cursor()
 		} else {
