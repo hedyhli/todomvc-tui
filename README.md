@@ -254,7 +254,7 @@ competition*!
 |rust-ratatui/src/main.rs|432|42|81|
 |v-term-ui/main.v|348|38|86|
 |go-vaxis/main.go|338|36|44|
-|zig-libvaxis/src/main.zig|310|41|77|
+|zig-libvaxis/src/main.zig|317|41|79|
 |nim-illwill/main.nim|247|47|25|
 |go-tview/main.go|181|3|21|
 |python-textual/main.py|180|5|9|
@@ -281,6 +281,12 @@ Zig
 - version 0.13.0
 - `zig build --release=<annotated>`
 
+<!--
+fillin zig build --release=[[level]] && fillin cp zig-out/bin/todomvc-tui ../bin/zig-libvaxis-[[level]]
+
+yes, type it twice... for now.
+-->
+
 Nim
 ```
 Nim Compiler Version 2.0.0 [MacOSX: arm64]
@@ -303,8 +309,8 @@ cd bin; ls | sort-by size | select name size | to md
 |-|-|
 |zig-libvaxis-small|153.6 KiB|
 |nim-illwill|289.8 KiB|
-|zig-libvaxis-fast|324.3 KiB|
-|zig-libvaxis-safe|389.2 KiB|
+|zig-libvaxis-fast|324.4 KiB|
+|zig-libvaxis-safe|389.3 KiB|
 |v-term-ui|630.5 KiB|
 |rust-ratatui|711.4 KiB|
 |go-vaxis|2.9 MiB|
