@@ -232,21 +232,16 @@ Commands used:
 - Zig
   - `zig build --release=<annotated>`
 
-Producing the table (Nushell): `ls | sort-by size | select size name`
-
 Platform: macos aarch6
 
 ```
-╭───┬───────────┬────────────────────╮
-│ # │   size    │        name        │
-├───┼───────────┼────────────────────┤
-│ 0 │ 153.6 KiB │ zig-libvaxis-small │
-│ 1 │ 289.8 KiB │ nim-illwill        │
-│ 2 │ 324.3 KiB │ zig-libvaxis-fast  │
-│ 3 │ 389.2 KiB │ zig-libvaxis-safe  │
-│ 4 │ 630.5 KiB │ v-term-ui          │
-│ 5 │ 711.4 KiB │ rust-ratatui       │
-│ 6 │   2.9 MiB │ go-vaxis           │
-│ 7 │   3.8 MiB │ go-tview           │
-╰───┴───────────┴────────────────────╯
+$ exa -Bl --no-user --no-time --no-permissions | sort
+  157,240 zig-libvaxis-small
+  296,721 nim-illwill
+  332,120 zig-libvaxis-fast
+  398,504 zig-libvaxis-safe
+  645,640 v-term-ui
+  728,512 rust-ratatui
+3,068,402 go-vaxis
+4,034,802 go-tview
 ```
