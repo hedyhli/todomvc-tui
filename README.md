@@ -10,6 +10,8 @@
 * [Roadmap](#roadmap)
 * [Spec](#spec)
   * [code](#code)
+  * [Tests](#tests)
+  * [Packaging](#packaging)
   * [functionality](#functionality)
   * [UI](#ui)
   * [UX](#ux)
@@ -147,13 +149,39 @@ lower.
   toolchain, in which case, stick to as little code splitting as possible for ease
   of comparison. The single file should be named `main.<ext>` unless required
   otherwise by the toolchain.
-- Tests may be added, and may or may not be in the same file
 - Documentation on functions may be added
 - A binary, if produced, or a project name if required, should be named
   "todomvc-tui". Use "todomvc_tui" if dashes are not allowed.
 - Directories are named `<language>-<framework>` where language is the full
   language name, followed by the framework/library used that does the primary
   heavy-lifting for the terminal.
+
+### Tests
+
+- Tests may be added, but they should not be in the `main.<ext>` file. For
+  instance, the `rust-ratatui` implementation saves the actual code of the TUI in
+  `src/main.rs`, and tests in `src/test.rs`, which is not needed for compiling the
+  binary.
+
+### Packaging
+
+A package definition file is not strictly necessary unless the toolchain
+requires these files to compile.
+
+- Some toolchains require package definition files to include a "version"
+  number. The spec compatibility version number as used [here](#implementations)
+  may be used. If SemVer is required, kindly keep the **patch** portion 0. For
+  instance, `1.2` -> `1.2.0`. If the the version key is used, use only the
+  version number for functionality, and omit ones for UI, internals, or other
+  prefixed versions.
+- The author of the implementation should be the one listed in the author field,
+  if required.
+- The repository field should be set to https://github.com/hedyhli/todomvc-tui.
+- If the documentation field is required, set it to the same as repository
+  field.
+- The implementation "project" should only specify an executable. A provided
+  library should NOT be defined.
+- The package itself should NOT be published.
 
 ### functionality
 
@@ -280,4 +308,5 @@ Patches](mailto:~hedy/inbox@lists.sr.ht)
 
 The spec isn't yet finalized, but I'm happy to review PRs/patches that introduce
 new implementations with the same features and UI as any of the existing ones,
-either in another language, or another framework of an existing language.
+either in another language, or another framework of an existing language. Such
+as... more lisps!
