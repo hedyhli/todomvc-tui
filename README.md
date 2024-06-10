@@ -2,6 +2,23 @@
 
 ![demo](./demo.png)
 
+
+<!-- mtoc-start -->
+
+* [Implementations](#implementations)
+* [Roadmap](#roadmap)
+* [Spec](#spec)
+  * [code](#code)
+  * [functionality](#functionality)
+  * [UI](#ui)
+  * [UX](#ux)
+  * [Internals](#internals)
+* [Stats](#stats)
+  * [Code](#code-1)
+  * [Binary](#binary)
+
+<!-- mtoc-end -->
+
 ## Implementations
 
 - Go
@@ -181,3 +198,55 @@ These version numbers prefixed with `i` are tracked separately.
   lifecycle/update methods
 - i2.1: incremental re-renders (rather than re-drawing the entire screen on each
   update), or an alternative performance optimization of renders
+
+## Stats
+
+### Code
+
+Notes:
+- `scc --sort code <file1> <file2> <file3> ...`
+- Only the `main.<ext>` file is used in analysis
+- Last updated 2024-06-10
+
+```
+───────────────────────────────────────────────────────────────────────────────
+Language                 Files     Lines   Blanks  Comments     Code Complexity
+───────────────────────────────────────────────────────────────────────────────
+Rust (ratatui)               1       523       49        42      432         81
+Go (vaxis)                   1       423       49        36      338         44
+V                            1       427       52        38      337         85
+Zig (libvaxis)               1       410       59        41      310         77
+Nim (illwill)                1       348       54        47      247         25
+Go (tview)                   1       212       28         3      181         21
+Python (textual)             1       210       25         5      180          9
+───────────────────────────────────────────────────────────────────────────────
+```
+
+### Binary
+
+Commands used:
+- Rust
+  - `cargo build --release`
+- Go
+  - `go build`
+- Zig
+  - `zig build --release=<annotated>`
+
+Producing the table (Nushell): `ls | sort-by size | select size name`
+
+Platform: macos aarch6
+
+```
+╭───┬───────────┬────────────────────╮
+│ # │   size    │        name        │
+├───┼───────────┼────────────────────┤
+│ 0 │ 153.6 KiB │ zig-libvaxis-small │
+│ 1 │ 289.8 KiB │ nim-illwill        │
+│ 2 │ 324.3 KiB │ zig-libvaxis-fast  │
+│ 3 │ 389.2 KiB │ zig-libvaxis-safe  │
+│ 4 │ 630.5 KiB │ v-term-ui          │
+│ 5 │ 711.4 KiB │ rust-ratatui       │
+│ 6 │   2.9 MiB │ go-vaxis           │
+│ 7 │   3.8 MiB │ go-tview           │
+╰───┴───────────┴────────────────────╯
+```
