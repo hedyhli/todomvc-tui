@@ -206,9 +206,9 @@ These version numbers prefixed with `i` are tracked separately.
 Kindly take these at face value and analyze at will in conjunction with the spec
 feature versions as listed [at the top](#implementations).
 
-### Code
-
 Last updated 2024-06-10
+
+### Code
 
 ```sh
 # Nushell
@@ -232,19 +232,25 @@ scc --by-file -f csv --sort code \
 Each implementation here is compiled using a command as listed below, then the
 binary is moved to `../bin/<name-of-dir-as-exe-name>`.
 
-Commands used:
 - Rust
+  - version: ```
+stable-aarch64-apple-darwin (default)
+rustc 1.77.2 (25ef9e3d8 2024-04-09)```
   - `cargo build --release`
 - Go
+  - version: `go version go1.19.5 darwin/arm64`
   - `go build`
 - Zig
+  - version: 0.13.0
   - `zig build --release=<annotated>`
 - Nim
+  - version: ```
+Nim Compiler Version 2.0.0 [MacOSX: arm64]
+Compiled at 2023-08-01```
   - `nim c main.nim`
 - V
+  - version: `V 0.4.6 6b2d527`
   - `v main.v`
-
-Platform: macos aarch6
 
 ```sh
 # Nushell
