@@ -14,6 +14,10 @@ fn Todo.new(name string) Todo {
 	}
 }
 
+fn (mut t Todo) toggle() {
+	t.complete = !t.complete
+}
+
 fn (t Todo) format() string {
 	if t.complete {
 		return '(X) ${t.name}'
@@ -206,9 +210,7 @@ fn event(e &tui.Event, x voidptr) {
 				app.sel -= if app.sel != 0 { 1 } else { 0 }
 				app.update_scroll()
 			}
-			.space, .enter {
-				app.list[app.sel].complete = !app.list[app.sel].complete
-			}
+			.space, .enter { app.list[app.sel].toggle() }
 			.e {
 				app.editing = true
 				app.editor.input = app.list[app.sel].name

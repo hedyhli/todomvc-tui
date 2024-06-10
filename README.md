@@ -252,7 +252,7 @@ competition*!
 |Filename|Code|Comments|Complexity|
 |-|-|-|-|
 |rust-ratatui/src/main.rs|432|42|81|
-|v-term-ui/main.v|347|38|86|
+|v-term-ui/main.v|348|38|86|
 |go-vaxis/main.go|338|36|44|
 |zig-libvaxis/src/main.zig|310|41|77|
 |nim-illwill/main.nim|247|47|25|
