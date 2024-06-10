@@ -161,7 +161,6 @@ pub const Todolist = struct {
             }
 
             const item = try todo.fmt();
-            const style: vaxis.Cell.Style = .{ .bg = .{ .index = 240 } };
 
             var right_padded = ArrayList(u8).init(std.heap.page_allocator);
             try right_padded.appendSlice(item);
@@ -170,11 +169,11 @@ pub const Todolist = struct {
                 while (j < win.width) : (j += 1) try right_padded.append(' ');
             }
 
-            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = style }, .{ .row_offset = row });
+            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = uiSelectedStyle }, .{ .row_offset = row });
             row += 1;
-            _ = try win.printSegment(Segment{ .text = right_padded.items, .style = style }, .{ .row_offset = row });
+            _ = try win.printSegment(Segment{ .text = right_padded.items, .style = uiSelectedStyle }, .{ .row_offset = row });
             row += 1;
-            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = style }, .{ .row_offset = row });
+            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = uiSelectedStyle }, .{ .row_offset = row });
             row += 1;
 
             i += 1;
@@ -226,7 +225,8 @@ const Event = union(enum) {
 };
 
 const uiSides = 25;
-const uiHeaderHeight = 8;
+const uiHeaderHeight = 10;
+const uiHeaderMargin = 6;
 ///Includes border
 const uiListHeight = 20;
 const uiEditWidth = 45;
@@ -234,6 +234,8 @@ const uiEditWidth = 45;
 const uiEditHeight = 5;
 ///256-color
 const uiFocusedColor = 9;
+const uiPlaceholderStyle: vaxis.Cell.Style = .{ .fg = .{ .index = 245 } };
+const uiSelectedStyle: vaxis.Cell.Style = .{ .bg = .{ .rgb = .{ 70, 70, 75 } } };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -346,7 +348,7 @@ pub fn main() !void {
 
         const headerText = Segment{ .text = "T O D O M V C" };
         const headerLine = vaxis.widgets.alignment.center(header, 13, uiHeaderHeight);
-        _ = try headerLine.printSegment(headerText, .{ .row_offset = 4 });
+        _ = try headerLine.printSegment(headerText, .{ .row_offset = uiHeaderMargin });
 
         rows += uiHeaderHeight;
 
@@ -363,7 +365,12 @@ pub fn main() !void {
             .y_off = 0,
             .border = .{ .where = .none },
         });
-        inputWig.draw(inputInner);
+        if (inputWig.buf.items.len > 0) {
+            inputWig.draw(inputInner);
+        } else {
+            inputInner.showCursor(0, 0);
+            _ = try inputInner.printSegment(Segment{ .text = "What needs to be done?", .style = uiPlaceholderStyle }, .{ .row_offset = 0 });
+        }
 
         if (model.focus != .input) {
             mainWin.hideCursor();
