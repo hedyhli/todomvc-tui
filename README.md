@@ -246,7 +246,7 @@ scc --by-file -f csv --sort code \
 ```
 
 Kindly read in conjunction with the [implementation](#implementations) spec
-compatability version numbers, and keep in mind *this is not a code-golfing
+compatibility version numbers, and keep in mind *this is not a code-golfing
 competition*!
 
 |Filename|Code|Comments|Complexity|
@@ -264,29 +264,39 @@ competition*!
 Each implementation here is compiled using a command as listed below, then the
 binary is moved to `../bin/<name-of-dir-as-exe-name>`.
 
-- Rust
-  - version: ```
+Rust
+```
 stable-aarch64-apple-darwin (default)
-rustc 1.77.2 (25ef9e3d8 2024-04-09)```
-  - `cargo build --release`
-- Go
-  - version: `go version go1.19.5 darwin/arm64`
-  - `go build`
-- Zig
-  - version: 0.13.0
-  - `zig build --release=<annotated>`
-- Nim
-  - version: ```
+rustc 1.77.2 (25ef9e3d8 2024-04-09)
+```
+- `cargo build --release`
+
+Go
+```
+go version go1.19.5 darwin/arm64
+```
+- `go build`
+
+Zig
+- version 0.13.0
+- `zig build --release=<annotated>`
+
+Nim
+```
 Nim Compiler Version 2.0.0 [MacOSX: arm64]
-Compiled at 2023-08-01```
-  - `nim c main.nim`
-- V
-  - version: `V 0.4.6 6b2d527`
-  - `v main.v`
+Compiled at 2023-08-01
+```
+- `nim c main.nim`
+
+V
+```
+V 0.4.6 6b2d527
+```
+- `v main.v`
 
 ```sh
 # Nushell
-ls bin | sort-by size | select name size | to md
+cd bin; ls | sort-by size | select name size | to md; cd ..
 ```
 
 |name|size|
