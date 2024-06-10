@@ -255,7 +255,7 @@ competition*!
 |rust-ratatui/src/main.rs|432|42|81|
 |v-term-ui/main.v|348|38|86|
 |go-vaxis/main.go|338|36|44|
-|zig-libvaxis/src/main.zig|317|41|79|
+|zig-libvaxis/src/main.zig|316|42|79|
 |nim-illwill/main.nim|247|47|25|
 |go-tview/main.go|181|3|21|
 |python-textual/main.py|180|5|9|
@@ -264,6 +264,8 @@ competition*!
 
 Each implementation here is compiled using a command as listed below, then the
 binary is moved to `../bin/<name-of-dir-as-exe-name>`.
+
+<details><summary>Toolchain specs</summary>
 
 Rust
 ```
@@ -283,9 +285,11 @@ Zig
 - `zig build --release=<annotated>`
 
 <!--
-fillin zig build --release=[[level]] && fillin cp zig-out/bin/todomvc-tui ../bin/zig-libvaxis-[[level]]
+zig build --release=small && cp zig-out/bin/todomvc-tui ../bin/zig-libvaxis-small
+zig build --release=safe && cp zig-out/bin/todomvc-tui ../bin/zig-libvaxis-safe
+zig build --release=fast && cp zig-out/bin/todomvc-tui ../bin/zig-libvaxis-fast
 
-yes, type it twice... for now.
+DO Repeat Yourself.
 -->
 
 Nim
@@ -300,6 +304,8 @@ V
 V 0.4.6 6b2d527
 ```
 - `v main.v`
+
+</details>
 
 ```nushell
 cd bin; ls | sort-by size | select name size | to md
