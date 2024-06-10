@@ -34,11 +34,11 @@ test "todolist.select" {
     try list.add("3");
 
     try e(list.cur == 2);
-    list.select_by(1);
+    list.selectBy(1);
     try e(list.cur == 2);
-    list.select_by(6);
+    list.selectBy(6);
     try e(list.cur == 2);
-    list.select_by(-6);
+    list.selectBy(-6);
     try e(list.cur == 0);
 
     try list.add("4");
@@ -49,7 +49,7 @@ test "todolist.select" {
     try list.add("7");
     try e(list.cur == 6);
     try e(list.scroll_top == 1);
-    list.select_by(-6);
+    list.selectBy(-6);
     try e(list.cur == 0);
     try e(list.scroll_top == 0);
 }
