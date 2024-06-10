@@ -234,12 +234,13 @@ These version numbers prefixed with `i` are tracked separately.
 Kindly take these at face value and analyze at will in conjunction with the spec
 feature versions as listed [at the top](#implementations).
 
+The command snippets use [Nu](https://www.nushell.sh/).
+
 Last updated 2024-06-10
 
 ### Code
 
-```
-# Nushell
+```nu
 ( scc --by-file -f csv --sort code
   rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go
   | from csv | select Filename Code Comments Complexity | to md )
@@ -300,8 +301,7 @@ V 0.4.6 6b2d527
 ```
 - `v main.v`
 
-```sh
-# Nushell
+```nu
 cd bin; ls | sort-by size | select name size | to md
 ```
 
