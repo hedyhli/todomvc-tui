@@ -245,6 +245,10 @@ scc --by-file -f csv --sort code \
   | from csv | select Filename Code Comments Complexity | to md
 ```
 
+Kindly read in conjunction with the [implementation](#implementations) spec
+compatability version numbers, and keep in mind *this is not a code-golfing
+competition*!
+
 |Filename|Code|Comments|Complexity|
 |-|-|-|-|
 |rust-ratatui/src/main.rs|432|42|81|
