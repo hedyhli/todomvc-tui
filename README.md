@@ -2,6 +2,7 @@
 
 ![demo](./demo.png)
 
+**Table of Contents**
 
 <!-- mtoc-start -->
 
@@ -16,6 +17,7 @@
 * [Stats](#stats)
   * [Code](#code-1)
   * [Binary](#binary)
+* [Contribute](#contribute)
 
 <!-- mtoc-end -->
 
@@ -201,28 +203,32 @@ These version numbers prefixed with `i` are tracked separately.
 
 ## Stats
 
+Kindly take these at face value and analyze at will in conjunction with the spec
+feature versions as listed [at the top](#implementations).
+
 ### Code
 
-Notes:
-- `scc --sort code <file1> <file2> <file3> ...`
-- Only the `main.<ext>` file is used in analysis
-- Last updated 2024-06-10
+Last updated 2024-06-10
 
+```sh
+# Nushell
+scc --by-file -f csv --sort code rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go | from csv | select Filename Code Comments Complexity | to md
 ```
-───────────────────────────────────────────────────────────────────────────────
-Language                 Files     Lines   Blanks  Comments     Code Complexity
-───────────────────────────────────────────────────────────────────────────────
-Rust (ratatui)               1       523       49        42      432         81
-Go (vaxis)                   1       423       49        36      338         44
-V                            1       427       52        38      337         85
-Zig (libvaxis)               1       410       59        41      310         77
-Nim (illwill)                1       348       54        47      247         25
-Go (tview)                   1       212       28         3      181         21
-Python (textual)             1       210       25         5      180          9
-───────────────────────────────────────────────────────────────────────────────
-```
+
+|Filename|Code|Comments|Complexity|
+|-|-|-|-|
+|rust-ratatui/src/main.rs|432|42|81|
+|go-vaxis/main.go|338|36|44|
+|v-term-ui/main.v|337|38|85|
+|zig-libvaxis/src/main.zig|310|41|77|
+|nim-illwill/main.nim|247|47|25|
+|go-tview/main.go|181|3|21|
+|python-textual/main.py|180|5|9|
 
 ### Binary
+
+Each implementation here is compiled using a command as listed below, then the
+binary is moved to `../bin/<name-of-dir-as-exe-name>`.
 
 Commands used:
 - Rust
@@ -231,17 +237,39 @@ Commands used:
   - `go build`
 - Zig
   - `zig build --release=<annotated>`
+- Nim
+  - `nim c main.nim`
+- V
+  - `v main.v`
 
 Platform: macos aarch6
 
+```sh
+# Nushell
+ls bin | sort-by size | select name size | to md
 ```
-$ exa -Bl --no-user --no-time --no-permissions | sort
-  157,240 zig-libvaxis-small
-  296,721 nim-illwill
-  332,120 zig-libvaxis-fast
-  398,504 zig-libvaxis-safe
-  645,640 v-term-ui
-  728,512 rust-ratatui
-3,068,402 go-vaxis
-4,034,802 go-tview
-```
+
+|name|size|
+|-|-|
+|zig-libvaxis-small|153.6 KiB|
+|nim-illwill|289.8 KiB|
+|zig-libvaxis-fast|324.3 KiB|
+|zig-libvaxis-safe|389.2 KiB|
+|v-term-ui|630.5 KiB|
+|rust-ratatui|711.4 KiB|
+|go-vaxis|2.9 MiB|
+|go-tview|3.8 MiB|
+
+It might be interesting to use PyInstaller for `python-*` implementations here
+to compare binary sizes with AOT-compiled languages, but I am not yet interested
+in installing PyInstaller just for this single purpose. This can be done once I
+set up CI that will automate generating these tables.
+
+## Contribute
+
+[Send PRs](https://github.com/hedyhli/todomvc/pulls) | [Send
+Patches](mailto:~hedy/inbox@lists.sr.ht)
+
+The spec isn't yet finalized, but I'm happy to review PRs/patches that introduce
+new implementations with the same features and UI as any of the existing ones,
+either in another language, or another framework of an existing language.

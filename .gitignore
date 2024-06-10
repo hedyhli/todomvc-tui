@@ -1,7 +1,16 @@
+# General
 todomvc-tui
 todomvc_tui
+bin
+
+# Rust
 target
+
+# OCaml
 _build
+
+# Zig
 zig-cache
 zig-out
+# Zig 0.13.0
 .zig-cache
