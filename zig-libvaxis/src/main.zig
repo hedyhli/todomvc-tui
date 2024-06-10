@@ -12,51 +12,53 @@ const log = std.log.scoped(.main);
 
 // Data ////////////////////////////////////////////////////////////////////
 ///A single Todo item
-const Todo = struct {
+pub const Todo = struct {
     name: []const u8,
     complete: bool,
 
+    ///Initialize a new todo by name as an incomplete item
+    pub fn new(name: []const u8) Todo {
+        return Todo{ .name = name, .complete = false };
+    }
+
     ///Toggle the Todo item completion state.
-    fn toggle(self: *Todo) void {
+    pub fn toggle(self: *Todo) void {
         self.complete = !self.complete;
     }
 
     ///Format for display as a list widget item.
-    fn fmt(self: Todo) ![]const u8 {
+    pub fn fmt(self: Todo) ![]const u8 {
         var display = ArrayList(u8).init(std.heap.page_allocator);
-        if (self.complete) {
-            try display.appendSlice("(X) ");
-        } else {
-            try display.appendSlice("( ) ");
-        }
-        for (self.name) |char| {
-            try display.append(char);
-        }
+        try display.appendSlice(if (self.complete) "  (X) " else "  ( ) ");
+        try display.appendSlice(self.name);
         return display.items;
     }
 };
 
 ///A list of Todos with current selection and scrolling
-const Todolist = struct {
+pub const Todolist = struct {
     l: ArrayList(Todo),
+    ///Index of current selection
     cur: usize = 0,
     ///Scroll offset
-    top_idx: usize = 0,
+    scroll_top: usize = 0,
+    ///Number of items at a time in viewport
+    max_items: usize = 6,
 
     ///Initialize an empty list with std.heap.page_allocator for ArrayList(Todo).
-    fn new() Todolist {
+    pub fn new() Todolist {
         return Todolist{ .l = ArrayList(Todo).init(std.heap.page_allocator) };
     }
 
     ///Add new todo by name and select it.
-    fn add(self: *Todolist, name: []const u8) !void {
+    pub fn add(self: *Todolist, name: []const u8) !void {
         if (name.len == 0) return;
-        try self.l.append(Todo{ .name = name, .complete = false });
-        self.cur = self.l.items.len - 1;
+        try self.l.append(Todo.new(name));
+        self.select(self.l.items.len - 1);
     }
 
     ///The text to display for the itemsleft widget.
-    fn itemsleft(self: *Todolist) ![]const u8 {
+    pub fn itemsleft(self: *Todolist) ![]const u8 {
         if (self.l.items.len == 0) return "";
 
         var display = ArrayList(u8).init(std.heap.page_allocator);
@@ -77,19 +79,53 @@ const Todolist = struct {
         };
     }
 
-    fn select(self: *Todolist, offset: i8) void {
-        const newCur: i8 = @as(i8, @intCast(self.cur)) + offset;
+    ///Update scroll to ensure selected item is visible in viewport.
+    pub fn ensure_visible(self: *Todolist) void {
+        const cur = self.cur;
+        const top = self.scroll_top;
+        if (cur < top) {
+            self.scroll_top = cur;
+        } else if (cur - top >= self.max_items) {
+            self.scroll_top = cur - self.max_items + 1;
+        }
+    }
+
+    ///Ensure newCur, which may be negative or higher than list length, to
+    ///either 0 or max index.
+    pub fn clamp(self: *Todolist, newCur: i8) usize {
         const max: i8 = @as(i8, @intCast(self.l.items.len - 1));
-        self.cur = @as(usize, @intCast(if (newCur < 0) 0 else if (newCur > max) max else newCur));
+        const clamped: i8 = if (newCur < 0) 0 else if (newCur > max) max else newCur;
+        return @as(usize, @intCast(clamped));
+    }
+
+    ///Move current selection by offset and clamp to start or end of list.
+    pub fn select_by(self: *Todolist, offset: i8) void {
+        const newCur: i8 = @as(i8, @intCast(self.cur)) + offset;
+        self.select(self.clamp(newCur));
+    }
+
+    ///Set selection index to newCur (must already be clamped!) and ensure
+    ///selection is visible in viewport.
+    pub fn select(self: *Todolist, newCur: usize) void {
+        self.cur = newCur;
+        self.ensure_visible();
     }
 
     fn update(self: *Todolist, ev: Event) void {
         switch (ev) {
             .key_press => |key| {
                 if (key.codepoint == vaxis.Key.down or key.matches('j', .{})) {
-                    self.select(1);
+                    self.select_by(1);
                 } else if (key.codepoint == vaxis.Key.up or key.matches('k', .{})) {
-                    self.select(-1);
+                    self.select_by(-1);
+                } else if (key.matches('d', .{ .ctrl = true })) {
+                    self.select_by(@as(i8, @intCast(self.max_items / 2)));
+                } else if (key.matches('u', .{ .ctrl = true })) {
+                    self.select_by(-@as(i8, @intCast(self.max_items / 2)));
+                } else if (key.codepoint == vaxis.Key.page_down) {
+                    self.select_by(@as(i8, @intCast(self.max_items)));
+                } else if (key.codepoint == vaxis.Key.page_up) {
+                    self.select_by(-@as(i8, @intCast(self.max_items)));
                 } else if (key.codepoint == vaxis.Key.space or key.codepoint == vaxis.Key.enter) {
                     self.l.items[self.cur].toggle();
                 }
@@ -98,6 +134,81 @@ const Todolist = struct {
                 unreachable;
             },
         }
+    }
+
+    pub fn iterViewport(self: *Todolist) TodolistIterator {
+        return TodolistIterator.new(self);
+    }
+
+    ///Draw Todolist items into the given window.
+    fn draw(self: *Todolist, win: vaxis.Window) !void {
+        if (self.l.items.len == 0) return;
+
+        var full_spaces = ArrayList(u8).init(std.heap.page_allocator);
+        { // Repeat spaces for the width of the printable window space.
+            var j: u8 = 0;
+            while (j < win.width) : (j += 1) try full_spaces.append(' ');
+        }
+
+        var row: u8 = 0;
+        var i: u8 = @as(u8, @intCast(self.scroll_top));
+        var iter = self.iterViewport();
+
+        while (iter.next()) |todo| {
+            if (self.cur != i) {
+                _ = try win.printSegment(Segment{ .text = try todo.fmt() }, .{ .row_offset = row + 1 });
+                row += 3;
+                i += 1;
+                continue;
+            }
+
+            const item = try todo.fmt();
+            const style: vaxis.Cell.Style = .{ .bg = .{ .index = 240 } };
+
+            var right_padded = ArrayList(u8).init(std.heap.page_allocator);
+            try right_padded.appendSlice(item);
+            { // Pad spaces to the right of the item display string.
+                var j: usize = item.len;
+                while (j < win.width) : (j += 1) try right_padded.append(' ');
+            }
+
+            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = style }, .{ .row_offset = row });
+            row += 1;
+            _ = try win.printSegment(Segment{ .text = right_padded.items, .style = style }, .{ .row_offset = row });
+            row += 1;
+            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = style }, .{ .row_offset = row });
+            row += 1;
+
+            i += 1;
+        }
+    }
+};
+
+const TodolistIterator = struct {
+    l: ArrayList(Todo),
+    ///Index of l.
+    i: usize,
+    max_i: usize,
+
+    fn new(todolist: *Todolist) TodolistIterator {
+        var last = todolist.l.items.len - 1;
+        const lastInView = todolist.max_items + todolist.scroll_top - 1;
+        if (lastInView < last) {
+            last = lastInView;
+        }
+        return .{
+            .l = todolist.l,
+            .i = todolist.scroll_top,
+            .max_i = last,
+        };
+    }
+
+    pub fn next(self: *TodolistIterator) ?Todo {
+        if (self.i <= self.max_i) {
+            self.i += 1;
+            return self.l.items[self.i - 1];
+        }
+        return null;
     }
 };
 
@@ -272,18 +383,7 @@ pub fn main() !void {
         });
 
         rows += uiListHeight;
-
-        { // List items
-            var i: u8 = 0;
-            for (model.list.l.items) |todo| {
-                var style: vaxis.Cell.Style = .{};
-                if (model.list.cur == i) {
-                    style.bg = .{ .index = 240 };
-                }
-                _ = try listWin.printSegment(Segment{ .text = try todo.fmt(), .style = style }, .{ .row_offset = i * 2 });
-                i += 1;
-            }
-        }
+        try model.list.draw(listWin);
 
         // Itemsleft
         const itemsleftWin = mainWin.child(.{
@@ -301,9 +401,7 @@ pub fn main() !void {
             while (padCount > 0) : (padCount -= 1) {
                 try displayStr.append(' ');
             }
-            for (itemsleftStr) |char| {
-                try displayStr.append(char);
-            }
+            try displayStr.appendSlice(itemsleftStr);
             _ = try itemsleftWin.printSegment(Segment{ .text = displayStr.items }, .{ .row_offset = 0 });
         }
 
