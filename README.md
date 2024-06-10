@@ -238,11 +238,11 @@ Last updated 2024-06-10
 
 ### Code
 
-```sh
+```
 # Nushell
-scc --by-file -f csv --sort code \
-  rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go \
-  | from csv | select Filename Code Comments Complexity | to md
+( scc --by-file -f csv --sort code
+  rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go
+  | from csv | select Filename Code Comments Complexity | to md )
 ```
 
 Kindly read in conjunction with the [implementation](#implementations) spec
@@ -252,8 +252,8 @@ competition*!
 |Filename|Code|Comments|Complexity|
 |-|-|-|-|
 |rust-ratatui/src/main.rs|432|42|81|
+|v-term-ui/main.v|347|38|86|
 |go-vaxis/main.go|338|36|44|
-|v-term-ui/main.v|337|38|85|
 |zig-libvaxis/src/main.zig|310|41|77|
 |nim-illwill/main.nim|247|47|25|
 |go-tview/main.go|181|3|21|
@@ -296,7 +296,7 @@ V 0.4.6 6b2d527
 
 ```sh
 # Nushell
-cd bin; ls | sort-by size | select name size | to md; cd ..
+cd bin; ls | sort-by size | select name size | to md
 ```
 
 |name|size|
