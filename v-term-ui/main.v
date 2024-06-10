@@ -222,11 +222,13 @@ fn event(e &tui.Event, x voidptr) {
 	// Input
 	match app.inputter.handle_key(e) {
 		.enter {
-			app.list << Todo.new(app.inputter.input)
-			app.initial = false
-			app.inputter.reset()
-			app.sel = app.list.len - 1
-			app.update_scroll()
+			if app.inputter.input.len > 0 {
+				app.list << Todo.new(app.inputter.input)
+				app.initial = false
+				app.inputter.reset()
+				app.sel = app.list.len - 1
+				app.update_scroll()
+			}
 		}
 		else {}
 	}
