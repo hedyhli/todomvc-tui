@@ -61,20 +61,17 @@ pub const Todolist = struct {
     pub fn itemsleft(self: *Todolist) ![]const u8 {
         if (self.l.items.len == 0) return "";
 
-        var display = ArrayList(u8).init(std.heap.page_allocator);
         var n: usize = 0;
         for (self.l.items) |todo| {
             if (!todo.complete) n += 1;
         }
+
         return switch (n) {
             0 => "woohoo! nothing left to do",
             1 => "1 item left",
             else => {
                 var buf: [256]u8 = undefined;
-                const count = try std.fmt.bufPrint(&buf, "{}", .{n});
-                try display.appendSlice(count);
-                try display.appendSlice(" items left");
-                return display.items;
+                return try std.fmt.bufPrint(&buf, "{} items left", .{n});
             },
         };
     }
@@ -90,8 +87,8 @@ pub const Todolist = struct {
         }
     }
 
-    ///Ensure newCur, which may be negative or higher than list length, to
-    ///either 0 or max index.
+    ///Ensure newCur, which may be negative or higher than list length, is
+    ///within range, clamping to either 0 or max index.
     pub fn clamp(self: *Todolist, newCur: i8) usize {
         const max: i8 = @as(i8, @intCast(self.l.items.len - 1));
         const clamped: i8 = if (newCur < 0) 0 else if (newCur > max) max else newCur;
@@ -136,6 +133,7 @@ pub const Todolist = struct {
         }
     }
 
+    ///Create a new iterator for items currently visible in viewport.
     pub fn iterViewport(self: *Todolist) TodolistIterator {
         return TodolistIterator.new(self);
     }
