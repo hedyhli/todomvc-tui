@@ -212,7 +212,9 @@ Last updated 2024-06-10
 
 ```sh
 # Nushell
-scc --by-file -f csv --sort code rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go | from csv | select Filename Code Comments Complexity | to md
+scc --by-file -f csv --sort code \
+  rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go \
+  | from csv | select Filename Code Comments Complexity | to md
 ```
 
 |Filename|Code|Comments|Complexity|
