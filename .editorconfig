@@ -20,3 +20,7 @@ trim_trailing_whitespace = true
 [*.nim]
 indent_style = space
 indent_size = 2
+
+[*.nu]
+indent_style = space
+indent_size = 2

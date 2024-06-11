@@ -2,7 +2,7 @@
 name = "todomvc-tui"
 description = "TodoMVC TUI implementation in Rust using Ratatui"
 # This is the version compatibility number of the TodoMVC TUI spec.
-version = "1.2"
+version = "1.2.0"
 edition = "2021"
 authors = ["~hedy <hedy.dev@protonmail.com>"]
 readme = "../README.md"

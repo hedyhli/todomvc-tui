@@ -242,7 +242,7 @@ Last updated 2024-06-10
 
 ```nushell
 ( scc --by-file -f csv --sort code
-  rust-ratatui/src/main.rs go-tview/main.go zig-libvaxis/src/main.zig nim-illwill/main.nim v-term-ui/main.v python-textual/main.py go-vaxis/main.go
+  rust-ratatui/src/main.rs go-tview/main.go # ...
   | from csv | select Filename Code Comments Complexity | to md )
 ```
 
@@ -250,15 +250,17 @@ Kindly read in conjunction with the [implementation](#implementations) spec
 compatibility version numbers, and keep in mind *this is not a code-golfing
 competition*!
 
+<!--begin-stats-code-->
 |Filename|Code|Comments|Complexity|
 |-|-|-|-|
-|rust-ratatui/src/main.rs|432|42|81|
-|v-term-ui/main.v|348|38|86|
-|go-vaxis/main.go|338|36|44|
-|zig-libvaxis/src/main.zig|323|44|76|
-|nim-illwill/main.nim|247|47|25|
-|go-tview/main.go|181|3|21|
-|python-textual/main.py|180|5|9|
+|**rust-ratatui** (src/main.rs)|432|42|81|
+|**v-term-ui** (main.v)|348|38|86|
+|**go-vaxis** (main.go)|338|36|44|
+|**zig-libvaxis** (src/main.zig)|326|48|78|
+|**nim-illwill** (main.nim)|247|47|25|
+|**go-tview** (main.go)|181|3|21|
+|**python-textual** (main.py)|180|5|9|
+<!--end-->
 
 ### Binary
 
@@ -308,19 +310,21 @@ V 0.4.6 6b2d527
 </details>
 
 ```nushell
-cd bin; ls | sort-by size | select name size | to md
+ls bin | sort-by size | select name size | to md
 ```
 
+<!--begin-stats-size-->
 |name|size|
 |-|-|
-|zig-libvaxis-small|153.7 KiB|
+|zig-libvaxis (small)|153.9 KiB|
 |nim-illwill|289.8 KiB|
-|zig-libvaxis-fast|324.4 KiB|
-|zig-libvaxis-safe|389.3 KiB|
-|v-term-ui|630.5 KiB|
-|rust-ratatui|711.4 KiB|
+|zig-libvaxis (fast)|324.5 KiB|
+|zig-libvaxis (safe)|389.4 KiB|
+|v-term-ui|630.6 KiB|
+|rust-ratatui|711.5 KiB|
 |go-vaxis|2.9 MiB|
 |go-tview|3.8 MiB|
+<!--end-->
 
 It might be interesting to use PyInstaller for `python-*` implementations here
 to compare binary sizes with AOT-compiled languages, but I am not yet interested
