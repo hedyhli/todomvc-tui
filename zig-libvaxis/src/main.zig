@@ -31,7 +31,7 @@ pub const Todo = struct {
         var display = ArrayList(u8).init(std.heap.page_allocator);
         try display.appendSlice(if (self.complete) "  (X) " else "  ( ) ");
         try display.appendSlice(self.name);
-        return display.items;
+        return display.toOwnedSlice();
     }
 };
 
@@ -48,6 +48,11 @@ pub const Todolist = struct {
     ///Initialize an empty list with std.heap.page_allocator for ArrayList(Todo).
     pub fn new() Todolist {
         return Todolist{ .l = ArrayList(Todo).init(std.heap.page_allocator) };
+    }
+
+    ///Free up memory allocated for the ArrayList(Todo).
+    pub inline fn deinit(self: *Todolist) void {
+        self.l.deinit();
     }
 
     ///Add new todo by name and select it.
@@ -143,6 +148,7 @@ pub const Todolist = struct {
         if (self.l.items.len == 0) return;
 
         var full_spaces = ArrayList(u8).init(std.heap.page_allocator);
+        // FIXME: Why does deferring a deinit segfault?
         { // Repeat spaces for the width of the printable window space.
             var j: u8 = 0;
             while (j < win.width) : (j += 1) try full_spaces.append(' ');
@@ -153,16 +159,18 @@ pub const Todolist = struct {
         var iter = self.iterVisible();
 
         while (iter.next()) |todo| {
+            defer i += 1;
+
             if (self.cur != i) {
                 try print(win, try todo.fmt(), .{}, row + 1);
                 row += 3;
-                i += 1;
                 continue;
             }
 
             const item = try todo.fmt();
 
             var right_padded = ArrayList(u8).init(std.heap.page_allocator);
+            // FIXME: Same here
             try right_padded.appendSlice(item);
             { // Pad spaces to the right of the item display string.
                 var j: usize = item.len;
@@ -175,8 +183,6 @@ pub const Todolist = struct {
             row += 1;
             try print(win, full_spaces.items, UI.selected_style, row);
             row += 1;
-
-            i += 1;
         }
     }
 };
@@ -290,6 +296,7 @@ pub fn main() !void {
 
     // Initialize widgets and model
     var model = Model{ .list = Todolist.new(), .focus = .input };
+    defer model.list.deinit();
     var input_widget = VaxisInput.init(alloc, &vx.unicode);
     defer input_widget.deinit();
 
@@ -313,6 +320,7 @@ pub fn main() !void {
                     switch (model.focus) {
                         .input => {
                             if (key.matches(vaxis.Key.enter, .{})) {
+                                // FIXME: Memory leak
                                 try model.list.add(try input_widget.toOwnedSlice());
                                 input_widget.clearAndFree();
                             } else {
@@ -414,7 +422,7 @@ pub fn main() !void {
                 try display.append(' ');
             }
             try display.appendSlice(itemsleft_str);
-            try print(itemsleft_win, display.items, .{}, 0);
+            try print(itemsleft_win, try display.toOwnedSlice(), .{}, 0);
         }
 
         // Render the screen
