@@ -8,6 +8,18 @@ const eql = std.testing.expectEqual;
 const eqlStrings = std.testing.expectEqualStrings;
 const main = @import("main.zig");
 
+test "defer in while loop" {
+    var i: u8 = 0;
+    var j: u8 = 0;
+    var s: [2]u8 = .{ 100, 100 };
+    while (i < 2) {
+        defer j += 1;
+        s[i] = j;
+        i += 1;
+    }
+    try eql(s, [_]u8{ 0, 1 });
+}
+
 test "todoitem" {
     var todo = main.Todo.new("todo");
     try eqlStrings(todo.name, "todo");
@@ -68,7 +80,7 @@ test "todolist.iterViewport" {
     try e(list.scroll_top == 2);
 
     { // Iter, with starting two items skipped
-        var iter = list.iterViewport();
+        var iter = list.iterVisible();
         var i: u8 = 3;
         var count: u8 = 0;
         while (iter.next()) |todo| {
@@ -83,7 +95,7 @@ test "todolist.iterViewport" {
     try eql(list.scroll_top, 0); // select at 0
 
     { // Iter, with last two items skipped
-        var iter = list.iterViewport();
+        var iter = list.iterVisible();
         var i: u8 = 1;
         var count: u8 = 0;
         while (iter.next()) |todo| {
