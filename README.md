@@ -255,7 +255,7 @@ competition*!
 |rust-ratatui/src/main.rs|432|42|81|
 |v-term-ui/main.v|348|38|86|
 |go-vaxis/main.go|338|36|44|
-|zig-libvaxis/src/main.zig|316|42|79|
+|zig-libvaxis/src/main.zig|323|44|76|
 |nim-illwill/main.nim|247|47|25|
 |go-tview/main.go|181|3|21|
 |python-textual/main.py|180|5|9|
@@ -313,7 +313,7 @@ cd bin; ls | sort-by size | select name size | to md
 
 |name|size|
 |-|-|
-|zig-libvaxis-small|153.6 KiB|
+|zig-libvaxis-small|153.7 KiB|
 |nim-illwill|289.8 KiB|
 |zig-libvaxis-fast|324.4 KiB|
 |zig-libvaxis-safe|389.3 KiB|

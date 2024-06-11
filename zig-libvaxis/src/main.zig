@@ -134,7 +134,7 @@ pub const Todolist = struct {
     }
 
     ///Create a new iterator for items currently visible in viewport.
-    pub fn iterViewport(self: *Todolist) TodolistIterator {
+    pub fn iterVisible(self: *Todolist) TodolistIterator {
         return TodolistIterator.new(self);
     }
 
@@ -150,11 +150,11 @@ pub const Todolist = struct {
 
         var row: u8 = 0;
         var i: u8 = @as(u8, @intCast(self.scroll_top));
-        var iter = self.iterViewport();
+        var iter = self.iterVisible();
 
         while (iter.next()) |todo| {
             if (self.cur != i) {
-                _ = try win.printSegment(Segment{ .text = try todo.fmt() }, .{ .row_offset = row + 1 });
+                try print(win, try todo.fmt(), .{}, row + 1);
                 row += 3;
                 i += 1;
                 continue;
@@ -169,11 +169,11 @@ pub const Todolist = struct {
                 while (j < win.width) : (j += 1) try right_padded.append(' ');
             }
 
-            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = UI.selected_style }, .{ .row_offset = row });
+            try print(win, full_spaces.items, UI.selected_style, row);
             row += 1;
-            _ = try win.printSegment(Segment{ .text = right_padded.items, .style = UI.selected_style }, .{ .row_offset = row });
+            try print(win, right_padded.items, UI.selected_style, row);
             row += 1;
-            _ = try win.printSegment(Segment{ .text = full_spaces.items, .style = UI.selected_style }, .{ .row_offset = row });
+            try print(win, full_spaces.items, UI.selected_style, row);
             row += 1;
 
             i += 1;
@@ -181,7 +181,7 @@ pub const Todolist = struct {
     }
 };
 
-const TodolistIterator = struct {
+pub const TodolistIterator = struct {
     l: ArrayList(Todo),
     ///Index of l.
     i: usize,
@@ -209,9 +209,16 @@ const TodolistIterator = struct {
     }
 };
 
+const Focus = enum { input, list, editing };
+
 const Model = struct {
     list: Todolist,
-    focus: enum { input, list, editing },
+    focus: Focus,
+
+    ///Helper to get the border color based on focus
+    inline fn getBorder(m: *Model, focus: Focus) vaxis.Cell.Style {
+        return .{ .fg = .{ .index = if (m.focus == focus) UI.focused_color else 255 } };
+    }
 };
 
 // UI //////////////////////////////////////////////////////////////////////
@@ -239,7 +246,13 @@ const UI = struct {
     const focused_color = 9;
     const placeholder_style: vaxis.Cell.Style = .{ .fg = .{ .index = 245 } };
     const selected_style: vaxis.Cell.Style = .{ .bg = .{ .rgb = .{ 70, 70, 75 } } };
+    const placeholder = Segment{ .text = "What needs to be done?", .style = UI.placeholder_style };
 };
+
+///Alias for win.printSegment
+inline fn print(win: vaxis.Window, text: []const u8, style: vaxis.Cell.Style, row_offset: usize) !void {
+    _ = try win.printSegment(Segment{ .text = text, .style = style }, .{ .row_offset = row_offset });
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -341,9 +354,8 @@ pub fn main() !void {
             .border = .{ .where = .none },
         });
 
-        const header_text = Segment{ .text = "T O D O M V C" };
         const header_line = vaxis.widgets.alignment.center(header, 13, UI.header_height);
-        _ = try header_line.printSegment(header_text, .{ .row_offset = UI.header_margin });
+        try print(header_line, "T O D O M V C", .{}, UI.header_margin);
 
         rows += UI.header_height;
 
@@ -353,7 +365,7 @@ pub fn main() !void {
             .y_off = rows,
             .width = .expand,
             .height = .{ .limit = 3 },
-            .border = .{ .where = .all, .style = .{ .fg = .{ .index = if (model.focus == .input) UI.focused_color else 255 } } },
+            .border = .{ .where = .all, .style = model.getBorder(.input) },
         });
         const input_inner = input_win.child(.{
             .x_off = 1,
@@ -364,7 +376,7 @@ pub fn main() !void {
             input_widget.draw(input_inner);
         } else {
             input_inner.showCursor(0, 0);
-            _ = try input_inner.printSegment(Segment{ .text = "What needs to be done?", .style = UI.placeholder_style }, .{ .row_offset = 0 });
+            _ = try input_inner.printSegment(UI.placeholder, .{ .row_offset = 0 });
         }
 
         if (model.focus != .input) {
@@ -379,7 +391,7 @@ pub fn main() !void {
             .y_off = rows,
             .width = .expand,
             .height = .{ .limit = UI.list_height },
-            .border = .{ .where = .all, .style = .{ .fg = .{ .index = if (model.focus == .list) UI.focused_color else 255 } } },
+            .border = .{ .where = .all, .style = model.getBorder(.list) },
         });
 
         rows += UI.list_height;
@@ -402,7 +414,7 @@ pub fn main() !void {
                 try display.append(' ');
             }
             try display.appendSlice(itemsleft_str);
-            _ = try itemsleft_win.printSegment(Segment{ .text = display.items }, .{ .row_offset = 0 });
+            try print(itemsleft_win, display.items, .{}, 0);
         }
 
         // Render the screen
