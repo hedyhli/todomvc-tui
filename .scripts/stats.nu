@@ -1,156 +1,148 @@
 #!/usr/bin/env nu
 
-# Patiently waiting for nuon to support closures.
-let impls = [
-  {
-    dir: "rust-ratatui",
+use std log
+
+# Patiently waiting for nuon to support closures, if ever.
+let impls = {
+  "rust-ratatui": {
     file: "src/main.rs",
-    build: { |dir| cargo build --release; cp target/release/todomvc-tui $"../bin/($dir)" }
+    build: { |dest| cargo build --release e> /dev/null; cp target/release/todomvc-tui $dest }
   },
-  {
-    dir: "go-tview",
+  "go-tview": {
     file: "main.go",
-    build: { |dir| go build; cp todomvc-tui $"../bin/($dir)" }
+    build: { |dest| go build; cp todomvc-tui $dest }
   },
-  {
-    dir: "zig-libvaxis",
+  "zig-libvaxis": {
     file: "src/main.zig",
-    build: { |dir|
+    build: { |dest|
       for r in [small safe fast] {
-        zig build $"--release=($r)"; cp zig-out/bin/todomvc-tui $"../bin/($dir)-($r)"
+        zig build $"--release=($r)"; cp zig-out/bin/todomvc-tui $"($dest)-($r)"
       }
     }
   },
-  {
-    dir: "nim-illwill",
+  "nim-illwill": {
     file: "main.nim",
-    build: { |dir| nim c main.nim; cp main $"../bin/($dir)" }
+    build: { |dest| nim c main.nim e> /dev/null; cp main $dest }
   },
-  {
-    dir: "v-term-ui",
+  "v-term-ui": {
     file: "main.v",
-    build: { |dir| v main.v -o $"../bin/($dir)" }
+    build: { |dest| v main.v -o $dest }
   },
-  {
-    dir: "python-textual",
+  "python-textual": {
     file: "main.py",
-    build: {|dir| true }
+    build: { |dest| true }
   },
-  {
-    dir: "go-vaxis",
+  "go-vaxis": {
     file: "main.go",
-    build: { |dir| go build; cp todomvc-tui $"../bin/($dir)" }
+    build: { |dest| go build; cp todomvc-tui $dest }
   },
-]
-
-[
-  {
-    dir: "rust-ratatui",
-    file: "src/main.sr",
-    build: { |dir| cargo build --release; cp target/release/todomvc-tui $"../bin/($dir)" }
-  },
-  {
-    dir: "go-tview",
-    file: "main.go",
-    build: { |dir| go build; cp todomvc-tui $"../bin/($dir)" }
-  },
-  {
-    dir: "zig-libvaxis",
-    file: "src/main.zig",
-    build: { |dir|
-      for r in [small safe fast] {
-        zig build $"--release=($r)"; cp zig-out/bin/todomvc-tui $"../bin/($dir)-($r)"
-      }
-    }
-  },
-  {
-    dir: "nim-illwill",
-    file: "main.nim",
-    build: { |dir| nim c main.nim; cp main $"../bin/($dir)" }
-  },
-  {
-    dir: "v-term-ui",
-    file: "main.v",
-    build: { |dir| v main.v -o $"../bin/($dir)" }
-  },
-  {
-    dir: "python-textual",
-    file: "main.py",
-    build: {|dir| true}
-  },
-  {
-    dir: "go-vaxis",
-    file: "main.go",
-    build: { |dir| go build; cp todomvc-tui $"../bin/($dir)" }
-  },
-] | $'($in.dir)/($in.file)'
-
-let code = (
-scc --by-file -f csv --sort code
-  ...($impls | each { $'($in.dir)/($in.file)' })
-  | from csv | select Filename Code Comments Complexity | tee { print $in }
-  | update Filename { ($in | split row -n 2 '/' | $"**($in.0)** \(($in.1)\)") }
-  | to md
-)
-
-# working above
-
-# TODO
-
-for impl in $impls {
-  cd $impl.dir
-  do $impl.build $impl.dir
-  cd ..
 }
 
-cd bin
-let size = (
-  ls | sort-by size | select name size | tee { print $in }
-  | update name {
+def code_table [] {
+  (scc --by-file -f csv --sort code
+    ...($impls | columns | each {|dir| $'($dir)/($impls | get $dir | get file)' })
+    | from csv
+    | select Filename Code Comments Complexity
+    | rename -c { Filename: "File" }
+    | tee { print $in }
+    | update File { ($in | split row -n 2 '/' | $"**($in.0)** \(($in.1)\)") }
+    | to md)
+}
+
+# Build specified impl directories.
+def build [...dirs: string] {
+  for dir in $dirs {
+    let impl = $impls | get $dir
+    cd $dir
+    log info $"Building ($dir)"
+    do $impl.build $"../bin/($dir)"
+    cd ..
+  }
+}
+
+def size_table [] {
+  cd bin
+  let size = (
+    ls
+    | sort-by -r size
+    | select name size
+    | rename Name Size
+    | tee { print $in }
+    | update Name {
       if ($in | str starts-with 'zig') {
-        $in | parse --regex '^(?<a>.+)-(?<b>.+)$' | $in.0
+        $in
+        | parse --regex '^(?<a>.+)-(?<b>.+)$'
+        | $in.0
         | $"($in.a) \(($in.b)\)"
       } else { $in }
     }
-  | to md
-)
-cd ..
+    | to md
+  )
+  cd ..
+  $size
+}
 
-let begin_code = "<!--begin-stats-code-->\n"
-let begin_size = "<!--begin-stats-size-->\n"
-let end = "\n<!--end-->"
+# Replace stats blocks within fences in the given file.
+def write_blocks [filename: string] {
+  let code = code_table
+  let size = size_table
+  let begin_code = "<!--begin-stats-code-->"
+  let begin_size = "<!--begin-stats-size-->"
+  let end = "<!--end-->"
 
-let file = ( open README.md )
-let saveto = "README.md"
-'' | save -f $saveto
+  def write [s?: string] {
+    if $s != null { $"($s)\n" | save -a README.md }
+  }
 
-# 1 keep
-# 2 -- begin-code
-# 3 replace
-# 4 -- end
-# 5 keep
-# 6 -- begin-size
-# 7 replace
-# 8 -- end
-# 9 keep
+  let file = (open README.md | lines)
+  '' | save -f $filename
 
-# 1, 3-
-let code_parts = ( $file | split row $begin_code )
-# 3
-$code_parts.0 | save -a $saveto
+  # before
+  # -------------- <begin-code>
+  # replace-code
+  # end-code
+  # -------------- <end>
+  # between
+  # -------------- <begin-size>
+  # replace-size
+  # end-code
+  # -------------- <end>
+  # after
 
-$begin_code | save -a $saveto
-$code| save -a $saveto
-$end | save -a $saveto
+  mut state = "before"
+  for line in $file {
+    $state = (
+      match $state {
+        "before"       if $line == $begin_code => ["replace-code" $begin_code],
+        "replace-code" =>                         ["end-code"     $code],
+        "end-code"     => (if $line == $end {     ["between"      $end] }      else { [$state null] }),
+        "between"      if $line == $begin_size => ["replace-size" $begin_size],
+        "replace-size" =>                         ["end-size"     $size],
+        "end-size"     => (if $line == $end {     ["after"        $end] }      else { [$state null] }),
+        _ => [$state $line]
+      }
+      | tee { write $in.1 } | $in.0
+    )
+  }
+}
 
-                  # 3-          # 3, 5-7, 9
-let end_parts = ( $code_parts.1 | split row $end )
-# 5-7        # 5, 7                  # 5
-$end_parts.1 | split row $begin_size | $in.0 | save -a $saveto
-
-$begin_size | save -a $saveto
-$size| save -a $saveto
-$end | save -a $saveto
-
-# 7-          # 7, 9           # 9
-$end_parts.2 | save -a $saveto
+# Update stats in the readme after optionally re-build specified list of impls.
+#
+# Nothing is rebuilt
+#   > .scripts/stats.nu
+#
+# All known impls rebuilt
+#   > .scripts/stats.nu all
+#
+# Only rebuild these
+#   > .scripts/stats.nu zig-libvaxis go-vaxis
+def main [
+  ...dirs: string  # Directory names of impls. Use 'all' to specify all known impls.
+]: nothing -> nothing {
+  build ...(if (($dirs | length) != 0 and $dirs.0 == 'all') {
+    $impls | columns
+  } else {
+    $dirs | each { str trim -rc '/' }
+  })
+  write_blocks "README.md"
+}

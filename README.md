@@ -251,7 +251,7 @@ compatibility version numbers, and keep in mind *this is not a code-golfing
 competition*!
 
 <!--begin-stats-code-->
-|Filename|Code|Comments|Complexity|
+|File|Code|Comments|Complexity|
 |-|-|-|-|
 |**rust-ratatui** (src/main.rs)|432|42|81|
 |**v-term-ui** (main.v)|348|38|86|
@@ -314,16 +314,16 @@ ls bin | sort-by size | select name size | to md
 ```
 
 <!--begin-stats-size-->
-|name|size|
+|Name|Size|
 |-|-|
-|zig-libvaxis (small)|153.9 KiB|
-|nim-illwill|289.8 KiB|
-|zig-libvaxis (fast)|324.5 KiB|
-|zig-libvaxis (safe)|389.4 KiB|
-|v-term-ui|630.6 KiB|
-|rust-ratatui|711.5 KiB|
-|go-vaxis|2.9 MiB|
 |go-tview|3.8 MiB|
+|go-vaxis|2.9 MiB|
+|rust-ratatui|711.5 KiB|
+|v-term-ui|630.6 KiB|
+|zig-libvaxis (safe)|389.4 KiB|
+|zig-libvaxis (fast)|324.5 KiB|
+|nim-illwill|289.8 KiB|
+|zig-libvaxis (small)|153.9 KiB|
 <!--end-->
 
 It might be interesting to use PyInstaller for `python-*` implementations here

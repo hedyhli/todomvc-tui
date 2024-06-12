@@ -14,3 +14,4 @@ zig-cache
 zig-out
 # Zig 0.13.0
 .zig-cache
+nim-illwill/main
