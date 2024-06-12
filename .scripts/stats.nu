@@ -126,7 +126,7 @@ def write_blocks [filename: string] {
   }
 }
 
-# Update stats in the readme after optionally re-build specified list of impls.
+# Update stats in the readme after optionally re-building specified list of impls.
 #
 # Nothing is rebuilt
 #   > .scripts/stats.nu
