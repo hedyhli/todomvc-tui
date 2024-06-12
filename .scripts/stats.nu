@@ -113,13 +113,13 @@ def write_blocks [filename: string] {
   for line in $file {
     $state = (
       match $state {
-        "before"       if $line == $begin_code => ["replace-code" $begin_code],
-        "replace-code" =>                         ["end-code"     $code],
-        "end-code"     => (if $line == $end {     ["between"      $end] }      else { [$state null] }),
-        "between"      if $line == $begin_size => ["replace-size" $begin_size],
-        "replace-size" =>                         ["end-size"     $size],
-        "end-size"     => (if $line == $end {     ["after"        $end] }      else { [$state null] }),
-        _ => [$state $line]
+      "before"       if $line == $begin_code => ["replace-code" $begin_code],
+      "replace-code" =>                         ["end-code"     $code],
+      "end-code"     => (if $line == $end {     ["between"      $end] }      else { [$state null] }),
+      "between"      if $line == $begin_size => ["replace-size" $begin_size],
+      "replace-size" =>                         ["end-size"     $size],
+      "end-size"     => (if $line == $end {     ["after"        $end] }      else { [$state null] }),
+      _ => [$state $line]
       }
       | tee { write $in.1 } | $in.0
     )
