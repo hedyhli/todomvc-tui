@@ -315,7 +315,7 @@ V 0.4.6 6b2d527
 </details>
 
 ```nushell
-ls bin | sort-by size | select name size | to md
+ls bin | sort-by -r size | select name size | to md
 ```
 
 <!--begin-stats-size-->
