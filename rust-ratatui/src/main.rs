@@ -48,12 +48,6 @@ fn fmt_itemsleft(ts: &Todos) -> String {
     }
 }
 
-fn complete_all(ts: &mut Todos) {
-    for t in ts {
-        t.complete = true;
-    }
-}
-
 // Input //////////////////////////////////////////////////////////////
 #[derive(Debug)]
 struct Inputter {
@@ -73,6 +67,14 @@ impl Inputter {
             saved_cursor: 0,
             render_placeholder: true,
         }
+    }
+
+    fn cursor_to_start(&mut self) {
+        self.cursor = 0;
+    }
+
+    fn cursor_to_end(&mut self) {
+        self.cursor = self.input.chars().count();
     }
 
     /// Save current input and cursor position.
@@ -124,33 +126,32 @@ impl Inputter {
         self.right();
     }
 
-    /// Delete left or right a character a cursor position.
-    fn delete(&mut self, right: bool) {
-        if right {
-            // Delete
-            let cur = self.byte_index();
-            // 0 1 2 3 |4| 5 6
-            // 0 1 2 3 |   5 6
-            let before = self.input.chars().take(cur);
-            let after = self.input.chars().skip(cur + 1);
-
-            self.input = before.chain(after).collect();
-        } else {
-            // Backspace
-            if self.cursor == 0 {
-                return;
-            }
-            let cur = self.cursor;
-            // 0 1 2 3 |4| 5 6
-            // 0 1 2   |4| 5 6
-            let before = self.input.chars().take(cur - 1);
-            let after = self.input.chars().skip(cur);
-
-            // Put all characters together except the selected one.
-            // By leaving the selected one out, it is forgotten and therefore deleted.
-            self.input = before.chain(after).collect();
-            self.left();
+    /// Backspace key
+    fn delete_left(&mut self) {
+        if self.cursor == 0 {
+            return;
         }
+        let cur = self.cursor;
+        // 0 1 2 3 |4| 5 6
+        // 0 1 2   |4| 5 6
+        let before = self.input.chars().take(cur - 1);
+        let after = self.input.chars().skip(cur);
+
+        // Put all characters together except the selected one.
+        // By leaving the selected one out, it is forgotten and therefore deleted.
+        self.input = before.chain(after).collect();
+        self.left();
+    }
+
+    /// Delete key
+    fn delete_right(&mut self) {
+        let cur = self.byte_index();
+        // 0 1 2 3 |4| 5 6
+        // 0 1 2 3 |   5 6
+        let before = self.input.chars().take(cur);
+        let after = self.input.chars().skip(cur + 1);
+
+        self.input = before.chain(after).collect();
     }
 }
 
@@ -184,7 +185,8 @@ impl App {
         }
     }
 
-    fn focus_border(&self, check_focus: &Focus) -> Style {
+    /// Get the border style based on current widget's required focus.
+    fn get_border(&self, check_focus: &Focus) -> Style {
         if self.focus == *check_focus {
             if self.focus == Focus::Input && self.editing.is_some() {
                 return Style::new().yellow();
@@ -192,6 +194,97 @@ impl App {
             return Style::new().blue();
         }
         Style::new()
+    }
+
+    fn complete_all(&mut self) {
+        for t in &mut self.todolist {
+            t.complete = true;
+        }
+    }
+
+    fn clear_completed(&mut self, state: &mut ListState) {
+        let mut new_list = Vec::new();
+        // Save current selection, if current item is not cleared.
+        let sel = match state.selected() {
+            None => self.todolist.len(),
+            Some(i) => i,
+        };
+        // New index of current selection after clearing.
+        let mut new_sel = sel;
+        // Whether current selection is cleared along with other completed items.
+        let mut sel_cleared = true;
+
+        for (i, t) in self.todolist.iter().enumerate() {
+            if t.complete {
+                // This item is cleared.
+                if i < sel {
+                    // Shift index for selection.
+                    new_sel -= 1;
+                }
+            } else {
+                // This item is kept.
+                new_list.push(Todo { name: t.name.clone(), complete: t.complete });
+                if i == sel {
+                    sel_cleared = false;
+                }
+            }
+        }
+        self.todolist = new_list;
+        #[allow(clippy::if_not_else)]
+        state.select(if !sel_cleared { Some(new_sel) } else { None });
+    }
+
+    /// Toggle completion of current selection, if any.
+    fn toggle_selection(&mut self, state: &mut ListState) {
+        if let Some(sel) = state.selected() {
+            self.todolist[sel].toggle();
+        }
+    }
+
+    /// Update selection by a given offset clamped to 0 and max list index.
+    fn select_offset(&mut self, offset: i16, state: &mut ListState) {
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_wrap)]
+        if let Some(sel) = state.selected() {
+            let mut new = (sel as i16) + offset;
+            let max = (self.todolist.len() - 1) as i16;
+            let min: i16 = 0;
+            new = new.clamp(min, max);
+            #[allow(clippy::cast_sign_loss)]
+            state.select(Some(new as usize));
+        }
+    }
+
+    /// Discard current input and stop editing.
+    fn cancel_edit(&mut self) {
+        self.inputter.restore();
+        self.editing = None;
+    }
+
+    /// Save current input and take over input for editing.
+    fn begin_editing(&mut self, state: &ListState) {
+        if let Some(sel) = state.selected() {
+            self.inputter.save();
+            self.focus = Focus::Input;
+            self.editing = Some(sel);
+            self.inputter.input = self.todolist[sel].name.clone();
+            self.inputter.cursor = self.inputter.input.chars().count();
+        }
+    }
+
+    fn new_item(&mut self, name: String, state: &mut ListState) {
+        self.todolist.push(Todo::new(name));
+        state.select(Some(self.todolist.len() - 1));
+        self.first_todo = false;
+        self.inputter.reset();
+    }
+
+    /// Save edits and restore input.
+    fn finish_editing(&mut self, name: String, idx: usize) {
+        self.todolist[idx].name = name;
+        self.focus = Focus::List;
+        self.editing = None;
+        self.inputter.restore();
     }
 
     fn run(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
@@ -241,7 +334,7 @@ impl App {
                         Block::bordered()
                             .border_type(BorderType::Rounded)
                             .padding(Padding::horizontal(1))
-                            .border_style(self.focus_border(&Focus::Input)),
+                            .border_style(self.get_border(&Focus::Input)),
                     ),
                     Rect::new(margin_side, 9, width, 3),
                 );
@@ -298,7 +391,7 @@ impl App {
                 let list = self.todolist.iter().map(Todo::fmt_item).collect::<List>()
                     .block(Block::bordered()
                            .border_type(BorderType::Rounded)
-                           .border_style(self.focus_border(&Focus::List)))
+                           .border_style(self.get_border(&Focus::List)))
                     .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
 
                 frame.render_stateful_widget(
@@ -347,69 +440,43 @@ impl App {
             }
 
             if key.code == KeyCode::Tab {
-                if self.focus == Focus::Input {
-                    self.focus = Focus::List;
-                } else {
-                    self.focus = Focus::Input;
-                }
+                self.focus = match self.focus {
+                    Focus::Input => Focus::List,
+                    Focus::List => Focus::Input,
+                };
                 return;
             }
 
-            // Input
             if self.focus == Focus::Input {
                 if key.modifiers == KeyModifiers::CONTROL {
                     match key.code {
-                        KeyCode::Char('a') => {
-                            self.inputter.cursor = 0;
-                        },
-                        KeyCode::Char('e') => {
-                            self.inputter.cursor = self.inputter.input.chars().count();
-                        },
+                        KeyCode::Char('a') => self.inputter.cursor_to_start(),
+                        KeyCode::Char('e') => self.inputter.cursor_to_end(),
                         _ => {}
                     }
                     return;
                 }
                 match key.code {
-                    KeyCode::Char(c) => {
-                        self.inputter.insert(c);
-                    }
-                    KeyCode::Left => {
-                        self.inputter.left();
-                    }
-                    KeyCode::Right => {
-                        self.inputter.right();
-                    }
-                    KeyCode::Backspace => {
-                        self.inputter.delete(false);
-                    }
-                    KeyCode::Delete => {
-                        self.inputter.delete(true);
-                    }
+                    KeyCode::Char(c)   => self.inputter.insert(c),
+                    KeyCode::Left      => self.inputter.left(),
+                    KeyCode::Right     => self.inputter.right(),
+                    KeyCode::Backspace => self.inputter.delete_left(),
+                    KeyCode::Delete    => self.inputter.delete_right(),
                     KeyCode::Enter => {
                         let name = self.inputter.input.clone();
                         if !name.is_empty() {
                             if let Some(idx) = self.editing {
-                                // Finish editing
-                                self.todolist[idx].name = name;
-                                self.focus = Focus::List;
-                                self.editing = None;
-                                self.inputter.restore();
+                                self.finish_editing(name, idx);
                             } else {
-                                // New item
-                                self.todolist.push(Todo::new(name));
-                                state.select(Some(self.todolist.len() - 1));
-                                self.first_todo = false;
-                                self.inputter.reset();
+                                self.new_item(name, state);
                             }
                         }
                     }
                     KeyCode::Esc => {
-                        // Treat as tab
+                        // Treat as tab if not currently editing.
                         self.focus = Focus::List;
                         if self.editing.is_some() {
-                            // Current input is discarded.
-                            self.inputter.restore();
-                            self.editing = None;
+                            self.cancel_edit();
                         }
                     }
                     _ => {}
@@ -421,78 +488,16 @@ impl App {
             // Todolist
             let len = self.todolist.len();
             if len == 0 || key.modifiers != KeyModifiers::NONE {
-                // Ignore when modifiers are provided, or when list is empty.
                 return;
             }
 
             match key.code {
-                KeyCode::Down | KeyCode::Char('j') => {
-                    if let Some(sel) = state.selected() {
-                        // Does not wrap
-                        if sel + 1 != len {
-                            state.select(Some(sel + 1));
-                        }
-                    } else {
-                        state.select(Some(0));
-                    }
-                },
-                KeyCode::Up | KeyCode::Char('k') => {
-                    if let Some(sel) = state.selected() {
-                        // Does not wrap
-                        if sel != 0 {
-                            state.select(Some(sel - 1));
-                        }
-                    } else {
-                        state.select(Some(len - 1));
-                    }
-                },
-                KeyCode::Enter | KeyCode::Char(' ') => {
-                    if let Some(sel) = state.selected() {
-                        self.todolist[sel].toggle();
-                    }
-                },
-                KeyCode::Char('e') => if let Some(current) = state.selected() {
-                    // Store current input state to return to after editing.
-                    self.inputter.save();
-                    self.focus = Focus::Input;
-                    self.editing = Some(current);
-                    self.inputter.input = self.todolist[current].name.clone();
-                    self.inputter.cursor = self.inputter.input.chars().count();
-                },
-                KeyCode::Char('m') => {
-                    complete_all(&mut self.todolist);
-                },
-                KeyCode::Char('c') => {
-                    let mut new_list = Vec::new();
-                    // Save current selection, if current item is not cleared.
-                    let sel = match state.selected() {
-                        None => len,
-                        Some(i) => i,
-                    };
-                    // New index of current selection after clearing.
-                    let mut new_sel = sel;
-                    // Whether current selection is cleared along with other completed items.
-                    let mut sel_cleared = true;
-
-                    for (i, t) in self.todolist.iter().enumerate() {
-                        if t.complete {
-                            // This item is cleared.
-                            if i < sel {
-                                // Shift index for selection.
-                                new_sel -= 1;
-                            }
-                        } else {
-                            // This item is kept.
-                            new_list.push(Todo { name: t.name.clone(), complete: t.complete });
-                            if i == sel {
-                                sel_cleared = false;
-                            }
-                        }
-                    }
-                    self.todolist = new_list;
-                    #[allow(clippy::if_not_else)]
-                    state.select(if !sel_cleared { Some(new_sel) } else { None });
-                },
+                KeyCode::Down  | KeyCode::Char('j') => self.select_offset(1, state),
+                KeyCode::Up    | KeyCode::Char('k') => self.select_offset(-1, state),
+                KeyCode::Enter | KeyCode::Char(' ') => self.toggle_selection(state),
+                KeyCode::Char('e') => self.begin_editing(state),
+                KeyCode::Char('m') => self.complete_all(),
+                KeyCode::Char('c') => self.clear_completed(state),
                 _ => {}
             };
         }

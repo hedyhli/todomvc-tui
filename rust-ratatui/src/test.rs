@@ -41,14 +41,14 @@ fn inputs() {
     assert_eq!(0, inp.cursor);
 
     inp.cursor = 2;
-    inp.delete(false);
+    inp.delete_left();
     assert_eq!("ac".to_string(), inp.input);
     assert_eq!(1, inp.cursor);
 
     inp.cursor = 2;
     inp.insert('d');
     inp.cursor = 0;
-    inp.delete(true);
+    inp.delete_right();
     assert_eq!("cd".to_string(), inp.input);
     assert_eq!(0, inp.cursor);
 }
