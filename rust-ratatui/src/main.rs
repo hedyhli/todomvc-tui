@@ -4,7 +4,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{
-    prelude::{Alignment, Color, CrosstermBackend, Line, Rect, Style, Stylize, Terminal},
+    prelude::{Alignment, Color, CrosstermBackend, Line, Rect, Style, Stylize, Terminal, Frame},
     widgets::{Block, BorderType, List, ListState, Padding, Paragraph},
 };
 use std::{
@@ -202,27 +202,23 @@ impl App {
         }
     }
 
+    /// Clear completed items and update selection index.
     fn clear_completed(&mut self, state: &mut ListState) {
         let mut new_list = Vec::new();
-        // Save current selection, if current item is not cleared.
         let sel = match state.selected() {
-            None => self.todolist.len(),
+            None => self.todolist.len() - 1,
             Some(i) => i,
         };
-        // New index of current selection after clearing.
         let mut new_sel = sel;
-        // Whether current selection is cleared along with other completed items.
         let mut sel_cleared = true;
 
         for (i, t) in self.todolist.iter().enumerate() {
             if t.complete {
-                // This item is cleared.
                 if i < sel {
-                    // Shift index for selection.
+                    // An item above selection is cleared, shift selection up.
                     new_sel -= 1;
                 }
             } else {
-                // This item is kept.
                 new_list.push(Todo { name: t.name.clone(), complete: t.complete });
                 if i == sel {
                     sel_cleared = false;
@@ -230,8 +226,7 @@ impl App {
             }
         }
         self.todolist = new_list;
-        #[allow(clippy::if_not_else)]
-        state.select(if !sel_cleared { Some(new_sel) } else { None });
+        state.select(if sel_cleared { Some(self.todolist.len() - 1) } else { Some(new_sel) });
     }
 
     /// Toggle completion of current selection, if any.
@@ -287,16 +282,95 @@ impl App {
         self.inputter.restore();
     }
 
+    /// Draw to frame using pre-initialized `ListState` and the bindings widget.
+    fn draw(&self, frame: &mut Frame, liststate: &mut ListState, bindings_widget: &Paragraph) {
+        let full = frame.size();
+        let margin_side = 30;
+        let list_top = 13;
+        let list_bot = 4;
+        let width = full.width - margin_side - margin_side;
+
+        let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
+        frame.render_widget(&header, Rect::new(0, 5, full.width - 1, 1));
+
+        let input_text = Line::from(
+            if self.inputter.render_placeholder && self.editing.is_none() {
+                "What needs to be done?".dark_gray()
+            } else {
+                self.inputter.input.clone().into()
+            }
+        );
+        let input_widget = Paragraph::new(input_text).block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .padding(Padding::horizontal(1))
+                .border_style(self.get_border(&Focus::Input))
+        );
+        frame.render_widget(input_widget, Rect::new(margin_side, 9, width, 3));
+        if self.focus == Focus::Input {
+            let input_cursor_absolute = margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap();
+            frame.set_cursor(input_cursor_absolute, 10);
+        }
+
+        match self.focus {
+            Focus::Input => {
+                let editing_hint = vec![
+                    "enter".bold(), ": save, ".into(),
+                    "esc".bold(), ": cancel ".into()
+                ];
+                let input_hint = vec!["enter".bold(), ": save ".into()];
+                frame.render_widget(
+                    Paragraph::new(Line::from(if self.editing.is_some() { editing_hint } else { input_hint }))
+                        .alignment(Alignment::Right),
+                    Rect::new(margin_side, list_top - 1, width, 1)
+                );
+            },
+            Focus::List => {
+                let buttons = Line::from(vec![
+                    " (M)".bold(), " Mark all as complete  ".into(),
+                    "(C)".bold(), " Clear completed".into()
+                ]);
+                let buttons_width = usize::try_into(buttons.width()).unwrap();
+                frame.render_widget(
+                    Paragraph::new(buttons),
+                    Rect::new(margin_side, list_top - 1, buttons_width, 1)
+                );
+            }
+        };
+
+        let todolist = self.todolist.iter().map(Todo::fmt_item).collect::<List>()
+            .block(Block::bordered()
+                .border_type(BorderType::Rounded)
+                .border_style(self.get_border(&Focus::List)))
+            .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
+
+        frame.render_stateful_widget(
+            &todolist,
+            Rect::new(
+                margin_side,
+                list_top,
+                width,
+                full.height - list_top - list_bot,
+            ),
+            liststate,
+        );
+
+        let itemsleft = Paragraph::new(
+            if self.first_todo {
+                String::new()
+            } else {
+                fmt_itemsleft(&self.todolist)
+            }
+        ).alignment(Alignment::Right);
+        frame.render_widget(&itemsleft, Rect::new(margin_side, full.height - list_bot, width, 1));
+
+        frame.render_widget(bindings_widget, Rect::new(0, full.height - 1, full.width - 1, 1));
+    }
+
     fn run(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         terminal.show_cursor()?;
 
         let mut liststate = ListState::default();
-
-        let margin_side = 30;
-        let list_top = 13;
-        let list_bot = 4;
-
-        let header = Paragraph::new("T O D O M V C").alignment(Alignment::Center);
 
         let bindings = [
             ("tab", "switch focus"),
@@ -315,114 +389,7 @@ impl App {
 
         // Main loop
         while !self.exit {
-            terminal.draw(|frame| {
-                let full = frame.size();
-                let width = full.width - margin_side - margin_side;
-
-                // Header
-                frame.render_widget(&header, Rect::new(0, 5, full.width - 1, 1));
-
-                // Input
-                frame.render_widget(
-                    Paragraph::new(
-                        if self.inputter.render_placeholder && self.editing.is_none() {
-                            Line::from("What needs to be done?").dark_gray()
-                        } else {
-                            Line::from(self.inputter.input.clone())
-                        }
-                    ).block(
-                        Block::bordered()
-                            .border_type(BorderType::Rounded)
-                            .padding(Padding::horizontal(1))
-                            .border_style(self.get_border(&Focus::Input)),
-                    ),
-                    Rect::new(margin_side, 9, width, 3),
-                );
-                if self.focus == Focus::Input {
-                    // Cursor position in input
-                    frame.set_cursor(
-                        margin_side + 2 + u16::try_from(self.inputter.cursor).unwrap(),
-                        10,
-                    );
-                }
-
-                // Button/hints row
-                if self.editing.is_some() {
-                    frame.render_widget(
-                        Paragraph::new(Line::from(
-                            vec!["enter".bold(), ": save, ".into(), "esc".bold(), ": cancel ".into()]
-                        )).alignment(Alignment::Right),
-                        Rect::new(margin_side, list_top - 1, width, 1)
-                    );
-                } else if self.focus == Focus::Input {
-                    frame.render_widget(
-                        Paragraph::new(Line::from(
-                            vec!["enter".bold(), ": save ".into()]
-                        )).alignment(Alignment::Right),
-                        Rect::new(margin_side, list_top - 1, width, 1)
-                    );
-                } else {
-                    let complete_all = Line::from(
-                        vec![" (M)".bold(), " Mark all as complete".into()]
-                    );
-                    #[allow(clippy::cast_possible_truncation)]
-                    let complete_all_width = complete_all.width() as u16;
-                    let clear_completed = Line::from(
-                        vec!["(C)".bold(), " Clear completed".into()]
-                    );
-                    #[allow(clippy::cast_possible_truncation)]
-                    let clear_completed_width = clear_completed.width() as u16;
-                    frame.render_widget(
-                        Paragraph::new(complete_all),
-                        Rect::new(margin_side, list_top - 1, complete_all_width, 1)
-                    );
-                    frame.render_widget(
-                        Paragraph::new(clear_completed),
-                        Rect::new(
-                            margin_side + complete_all_width + 2,
-                            list_top - 1,
-                            clear_completed_width,
-                            1
-                        )
-                    );
-                }
-
-                // Todolist
-                let list = self.todolist.iter().map(Todo::fmt_item).collect::<List>()
-                    .block(Block::bordered()
-                           .border_type(BorderType::Rounded)
-                           .border_style(self.get_border(&Focus::List)))
-                    .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
-
-                frame.render_stateful_widget(
-                    &list,
-                    Rect::new(
-                        margin_side,
-                        list_top,
-                        width,
-                        full.height - list_top - list_bot,
-                    ),
-                    &mut liststate,
-                );
-
-                // Itemsleft
-                frame.render_widget(
-                    Paragraph::new(
-                        if self.first_todo {
-                            String::new()
-                        } else {
-                            fmt_itemsleft(&self.todolist)
-                        }
-                    ).alignment(Alignment::Right),
-                    Rect::new(margin_side, full.height - list_bot, width, 1),
-                );
-
-                // Bindings hint
-                frame.render_widget(
-                    &bindings_widget,
-                    Rect::new(0, full.height - 1, full.width - 1, 1),
-                );
-            })?;
+            terminal.draw(|frame| self.draw(frame, &mut liststate, &bindings_widget))?;
 
             // Blocks until there's an event. I think.
             if let Event::Key(key_event) = event::read()? {
@@ -486,8 +453,7 @@ impl App {
             }
 
             // Todolist
-            let len = self.todolist.len();
-            if len == 0 || key.modifiers != KeyModifiers::NONE {
+            if self.todolist.is_empty() || key.modifiers != KeyModifiers::NONE {
                 return;
             }
 

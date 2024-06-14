@@ -256,7 +256,7 @@ competition*!
 <!--begin-stats-code-->
 |File|Code|Comments|Complexity|
 |-|-|-|-|
-|**rust-ratatui** (src/main.rs)|430|41|67|
+|**rust-ratatui** (src/main.rs)|407|31|63|
 |**v-term-ui** (main.v)|348|38|86|
 |**go-vaxis** (main.go)|338|36|44|
 |**zig-libvaxis** (src/main.zig)|326|48|78|
@@ -321,7 +321,7 @@ ls bin | sort-by size | select name size | to md
 |-|-|
 |go-tview|3.8 MiB|
 |go-vaxis|2.9 MiB|
-|rust-ratatui|711.8 KiB|
+|rust-ratatui|711.3 KiB|
 |v-term-ui|630.6 KiB|
 |zig-libvaxis (safe)|389.4 KiB|
 |zig-libvaxis (fast)|324.5 KiB|
