@@ -50,7 +50,7 @@ fn fmt_itemsleft(ts: &Todos) -> String {
 
 fn complete_all(ts: &mut Todos) {
     for t in ts {
-        t.complete = true
+        t.complete = true;
     }
 }
 
@@ -126,7 +126,17 @@ impl Inputter {
 
     /// Delete left or right a character a cursor position.
     fn delete(&mut self, right: bool) {
-        if !right {
+        if right {
+            // Delete
+            let cur = self.byte_index();
+            // 0 1 2 3 |4| 5 6
+            // 0 1 2 3 |   5 6
+            let before = self.input.chars().take(cur);
+            let after = self.input.chars().skip(cur + 1);
+
+            self.input = before.chain(after).collect();
+        } else {
+            // Backspace
             if self.cursor == 0 {
                 return;
             }
@@ -140,14 +150,6 @@ impl Inputter {
             // By leaving the selected one out, it is forgotten and therefore deleted.
             self.input = before.chain(after).collect();
             self.left();
-        } else {
-            let cur = self.byte_index();
-            // 0 1 2 3 |4| 5 6
-            // 0 1 2 3 |   5 6
-            let before = self.input.chars().take(cur);
-            let after = self.input.chars().skip(cur + 1);
-
-            self.input = before.chain(after).collect();
         }
     }
 }
@@ -182,12 +184,10 @@ impl App {
         }
     }
 
-    fn focus_border(&self, check_focus: Focus) -> Style {
-        if self.focus == check_focus {
-            if self.focus == Focus::Input {
-                if let Some(_) = self.editing {
-                    return Style::new().yellow();
-                }
+    fn focus_border(&self, check_focus: &Focus) -> Style {
+        if self.focus == *check_focus {
+            if self.focus == Focus::Input && self.editing.is_some() {
+                return Style::new().yellow();
             }
             return Style::new().blue();
         }
@@ -232,7 +232,7 @@ impl App {
                 // Input
                 frame.render_widget(
                     Paragraph::new(
-                        if self.inputter.render_placeholder && self.editing == None {
+                        if self.inputter.render_placeholder && self.editing.is_none() {
                             Line::from("What needs to be done?").dark_gray()
                         } else {
                             Line::from(self.inputter.input.clone())
@@ -241,7 +241,7 @@ impl App {
                         Block::bordered()
                             .border_type(BorderType::Rounded)
                             .padding(Padding::horizontal(1))
-                            .border_style(self.focus_border(Focus::Input)),
+                            .border_style(self.focus_border(&Focus::Input)),
                     ),
                     Rect::new(margin_side, 9, width, 3),
                 );
@@ -254,7 +254,7 @@ impl App {
                 }
 
                 // Button/hints row
-                if self.editing != None {
+                if self.editing.is_some() {
                     frame.render_widget(
                         Paragraph::new(Line::from(
                             vec!["enter".bold(), ": save, ".into(), "esc".bold(), ": cancel ".into()]
@@ -272,10 +272,12 @@ impl App {
                     let complete_all = Line::from(
                         vec![" (M)".bold(), " Mark all as complete".into()]
                     );
+                    #[allow(clippy::cast_possible_truncation)]
                     let complete_all_width = complete_all.width() as u16;
                     let clear_completed = Line::from(
                         vec!["(C)".bold(), " Clear completed".into()]
                     );
+                    #[allow(clippy::cast_possible_truncation)]
                     let clear_completed_width = clear_completed.width() as u16;
                     frame.render_widget(
                         Paragraph::new(complete_all),
@@ -293,10 +295,10 @@ impl App {
                 }
 
                 // Todolist
-                let list = self.todolist.iter().map(|t| t.fmt_item()).collect::<List>()
+                let list = self.todolist.iter().map(Todo::fmt_item).collect::<List>()
                     .block(Block::bordered()
                            .border_type(BorderType::Rounded)
-                           .border_style(self.focus_border(Focus::List)))
+                           .border_style(self.focus_border(&Focus::List)))
                     .highlight_style(Style::default().white().bg(Color::Rgb(65, 70, 80)));
 
                 frame.render_stateful_widget(
@@ -330,10 +332,9 @@ impl App {
             })?;
 
             // Blocks until there's an event. I think.
-            match event::read()? {
-                Event::Key(key_event) => self.handle_key(key_event, &mut liststate),
-                _ => {}
-            };
+            if let Event::Key(key_event) = event::read()? {
+                self.handle_key(key_event, &mut liststate);
+            }
         }
         Ok(())
     }
@@ -405,7 +406,7 @@ impl App {
                     KeyCode::Esc => {
                         // Treat as tab
                         self.focus = Focus::List;
-                        if self.editing != None {
+                        if self.editing.is_some() {
                             // Current input is discarded.
                             self.inputter.restore();
                             self.editing = None;
@@ -474,21 +475,22 @@ impl App {
                     let mut sel_cleared = true;
 
                     for (i, t) in self.todolist.iter().enumerate() {
-                        if !t.complete {
-                            // This item is kept.
-                            new_list.push(Todo { name: t.name.clone(), complete: t.complete });
-                            if i == sel {
-                                sel_cleared = false;
-                            }
-                        } else {
+                        if t.complete {
                             // This item is cleared.
                             if i < sel {
                                 // Shift index for selection.
                                 new_sel -= 1;
                             }
+                        } else {
+                            // This item is kept.
+                            new_list.push(Todo { name: t.name.clone(), complete: t.complete });
+                            if i == sel {
+                                sel_cleared = false;
+                            }
                         }
                     }
                     self.todolist = new_list;
+                    #[allow(clippy::if_not_else)]
                     state.select(if !sel_cleared { Some(new_sel) } else { None });
                 },
                 _ => {}
