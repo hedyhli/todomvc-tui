@@ -39,10 +39,10 @@ let impls = {
 }
 
 def code_table [] {
-  (scc --by-file -f csv --sort code
+  (scc --by-file -f csv --sort code --uloc
     ...($impls | columns | each {|dir| $'($dir)/($impls | get $dir | get file)' })
     | from csv
-    | select Filename Code Comments Complexity
+    | select Filename Code ULOC Comments Complexity
     | rename -c { Filename: "File" }
     | tee { print $in }
     | update File { ($in | split row -n 2 '/' | $"**($in.0)** \(($in.1)\)") }

@@ -237,16 +237,18 @@ These version numbers prefixed with `i` are tracked separately.
 Kindly take these at face value and analyze at will in conjunction with the spec
 feature versions as listed [at the top](#implementations).
 
-The command snippets use [Nu](https://www.nushell.sh/).
+The command snippets, which are in [Nu](https://www.nushell.sh/), are provided
+as a rough overview of the commands run in the [stats script](.scripts/stat.nu)
+with the formatting code removed to get the idea across.
 
 Last updated 2024-06-10
 
 ### Code
 
 ```nushell
-( scc --by-file -f csv --sort code
+( scc --by-file -f csv --sort code --uloc
   rust-ratatui/src/main.rs go-tview/main.go # ...
-  | from csv | select Filename Code Comments Complexity | to md )
+  | from csv | select Filename Code Comments Complexity ULOC | to md )
 ```
 
 Kindly read in conjunction with the [implementation](#implementations) spec
@@ -254,15 +256,15 @@ compatibility version numbers, and keep in mind *this is not a code-golfing
 competition*!
 
 <!--begin-stats-code-->
-|File|Code|Comments|Complexity|
-|-|-|-|-|
-|**rust-ratatui** (src/main.rs)|407|31|63|
-|**v-term-ui** (main.v)|348|38|86|
-|**go-vaxis** (main.go)|338|36|44|
-|**zig-libvaxis** (src/main.zig)|326|48|78|
-|**nim-illwill** (main.nim)|247|47|25|
-|**go-tview** (main.go)|181|3|21|
-|**python-textual** (main.py)|180|5|9|
+|File|Code|ULOC|Comments|Complexity|
+|-|-|-|-|-|
+|**rust-ratatui** (src/main.rs)|407|345|31|63|
+|**v-term-ui** (main.v)|348|287|38|86|
+|**go-vaxis** (main.go)|338|290|36|44|
+|**zig-libvaxis** (src/main.zig)|326|308|48|78|
+|**nim-illwill** (main.nim)|247|270|47|25|
+|**go-tview** (main.go)|181|162|3|21|
+|**python-textual** (main.py)|180|146|5|9|
 <!--end-->
 
 ### Binary
