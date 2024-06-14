@@ -9,8 +9,8 @@
 * [Implementations](#implementations)
 * [Roadmap](#roadmap)
 * [Spec](#spec)
-  * [code](#code)
-  * [Tests](#tests)
+  * [Code](#code)
+  * [Checks](#checks)
   * [Packaging](#packaging)
   * [functionality](#functionality)
   * [UI](#ui)
@@ -143,7 +143,7 @@ given feature for implementations. Ideally, an implementation that targets a
 version number of X should implement ALL features tagged with version X and
 lower.
 
-### code
+### Code
 
 - All code should be in a single file unless required otherwise by the
   toolchain, in which case, stick to as little code splitting as possible for ease
@@ -156,12 +156,15 @@ lower.
   language name, followed by the framework/library used that does the primary
   heavy-lifting for the terminal.
 
-### Tests
+### Checks
 
 - Tests may be added, but they should not be in the `main.<ext>` file. For
   instance, the `rust-ratatui` implementation saves the actual code of the TUI in
   `src/main.rs`, and tests in `src/test.rs`, which is not needed for compiling the
   binary.
+- Linting is not necessary, but recommended. (E.g. `cargo clippy`, `go vet`)
+- An official style guide or formatting tool should be used if available. (E.g.
+  `zig fmt`, `go fmt`)
 
 ### Packaging
 
