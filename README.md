@@ -117,7 +117,9 @@
 
 - (planned) C++
 
-- (WIP) Odin (using only `core:encoding/ansi`)
+- (WIP) Odin (using only `core:encoding/ansi`), also note some of these
+  resources might be useful as an ad-hoc solution:
+  https://github.com/odin-lang/Odin/discussions?discussions_q=terminal
 
 - (planned) Odin -- Waiting for the core `terminal` package to be implemented: https://github.com/odin-lang/Odin/discussions/978
 
