@@ -86,7 +86,7 @@
     these operations instead is boring and trivial.
 
   - (probably NOT) urwid, curses
-  - (planned) blessed
+  - (WIP) blessed
   - (planned) pytermgui
 
 - (planned) Some lisps, hopefully.
@@ -108,7 +108,7 @@
     
     waiting for 0.0.3 to be released (https://github.com/leostera/minttea/issues/54)
 
-  - (STALLED) lwd + nottui
+  - (WIP) lwd + nottui
 
 - V
   - [x] `term.ui` (1.1, i1.1, u1.1)
@@ -116,6 +116,10 @@
     fully-featured with modal dialog (with darkened background) for editing, no mouse support.
 
 - (planned) C++
+
+- (WIP) Odin (using only `core:encoding/ansi`)
+
+- (planned) Odin -- Waiting for the core `terminal` package to be implemented: https://github.com/odin-lang/Odin/discussions/978
 
 ## Roadmap
 

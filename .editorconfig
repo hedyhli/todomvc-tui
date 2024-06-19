@@ -28,3 +28,9 @@ indent_size = 2
 [justfile]
 indent_style = space
 indent_size = 2
+
+[*.odin]
+indent_style = tab
+
+[*.go]
+indent_style = tab

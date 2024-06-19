@@ -1,0 +1,4 @@
+set shell := ["fish", "-c"]
+
+build:
+  odin run . 2> /dev/null
