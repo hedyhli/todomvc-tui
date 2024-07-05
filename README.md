@@ -11,11 +11,10 @@
 * [Spec](#spec)
   * [Code](#code)
   * [Checks](#checks)
-  * [Packaging](#packaging)
-  * [functionality](#functionality)
+  * [Functionality and UX](#functionality-and-ux)
   * [UI](#ui)
-  * [UX](#ux)
   * [Internals](#internals)
+  * [Packaging](#packaging)
 * [Stats](#stats)
   * [Code](#code-1)
   * [Binary](#binary)
@@ -129,7 +128,7 @@
 - [x] frame for nim illwill
 - [x] continue with nim
 - [x] attempt at frame for go vaxis
-- [ ] finalize UI and formalize it into spec
+- [x] finalize UI and formalize it into spec
 - [x] attempt at rust Zi
 - [ ] update older impl to new UI spec
 - [x] finish go vaxis
@@ -172,71 +171,117 @@ lower.
 - An official style guide or formatting tool should be used if available. (E.g.
   `zig fmt`, `go fmt`)
 
-### Packaging
+### Functionality and UX
 
-A package definition file is not strictly necessary unless the toolchain
-requires these files to compile.
+0.1
+- Show N incomplete under the todolist, right-aligned. It should be hidden where
+  there are no items in the todolist. A custom text (such as "All done!") when
+  there are items, but all have been completed, and a "N items left"/"1 item left"
+  otherwise.
+- Keys to navigate the list -- `up/down/j/k`
+- Input field should support arrow keys, backspace/delete, and basic emacs keys
+  `Ctrl-A/Home`, `Ctrl-E/End`
+- Space key to toggle completion state of the currently selected todo item
 
-- Some toolchains require package definition files to include a "version"
-  number. The spec compatibility version number as used [here](#implementations)
-  may be used. If SemVer is required, kindly keep the **patch** portion 0. For
-  instance, `1.2` -> `1.2.0`. If the the version key is used, use only the
-  version number for functionality, and omit ones for UI, internals, or other
-  prefixed versions.
-- The author of the implementation should be the one listed in the author field,
-  if required.
-- The repository field should be set to https://github.com/hedyhli/todomvc-tui.
-- If the documentation field is required, set it to the same as repository
-  field.
-- The implementation "project" should only specify an executable. A provided
-  library should NOT be defined.
-- The package itself should NOT be published.
+1.0
+- Scrollable list view -- todo items should not be drawn to "overflow" the list
+  container
 
-### functionality
+1.1
+- `e` key to edit the name of the currently selected todo item, using a pop up
+  modal. It should support both saving the new name, or cancelling the operation
 
-- 0.1: Show N incomplete as text
-- 1.0: Button to confirm edit with modals
-- 1.2: Button to clear all completed
-- 1.2: Button to mark all completed
-- 2.0: Input validation - must be non-empty string (whitespace trimmed)
+1.2
+- Button to mark all as completed
+- Button to clear all completed items. (See how current selection is retained in
+  the Rust Ratatui implementation, where the current selection is kept if it is
+  not cleared; if it is cleared, a previous item is selected.)
+
+The row of buttons should be below the input and above the todolist. (See Go
+Tview for an example.)
+
+2.0
+- Input validation -- new todo item name must be a non-empty string (with
+  leading/trailing whitespace trimmed), see Python Textual implementation.
+- Backspace key to delete items. The previous item should be selected
+  afterwards.
+- Mouse to switch focus between input and todolist.
+- Mouse support for input field (see Go Tview and Python Textual) for example
+  behaviour
 
 ### UI
 
-These **must** be followed, by convention and for consistency.
+u0.1
+- Hero section with a center-aligned `T O D O M V C`
+- New todo input field: height (including borders) 3
+- List items in the todo list should have total height of 3 rows each. The
+  middle row is used to display the completion status followed by the todo name.
+- Use `(X)`/`( )` to show completion status, unless a native "checkbox" widget
+  is built-in, such as in Python Textual.
 
-Version numbers prefixed with `u` are tracked separately.
+u1.0
+- Solid borders for input and todolist.
+- Different style/color of borders determines focus, unless the framework
+  supports this natively using another distinction (such as solid vs double
+  borders like in Go Tview).
+- Centered main section (hero, input, todolist, itemsleft) with equal margins on
+  either sides.
+- itemsleft right aligned under the todolist
 
-- u0.1: Hero with large padding top/bottom
-- u0.1: New todo: height (including borders) 3
-- u1.0: Solid borders for input and todolist.
-- u1.0: Different style/color of borders determines focus
-- u1.0: Centered main section
-- u1.0: itemsleft right aligned under the todolist
-- u1.1: Edit modal applies a background overlay on top of other contents outside
-  modal.
-- u1.5: main section dynamically sized with ...
+u1.1
+- Edit modal applies a background overlay on top of other contents outside
+  modal. (See how it can be implemented by-hand in the Vlang implementation.)
 
-### UX
+u1.2
+- A footer with the list of keys and their descriptions (see screenshot at the
+  top showing Rust Ratatui). Keys should be bold. The entire line should be
+  centered.
 
-- 0.1: Keys to navigate
-- 0.1: Input field should support basic emacs keys
-- 0.1: Keys to toggle complete
-- 1.0: Scrollable list view
-- 1.1: `e` to edit
-- 2.0: key to delete
-- 2.0: Mouse to switch focus
-- 2.0: Input field mouse support
+u1.5
+- Widgets dynamically sized rather than hardcoded -- for wide screens, keep the
+  width within a maximum, and for narrow screens, remove side paddings entirely
+  and fill widgets to the full width. Side padding (number of columns and the
+  sides) may be hardcoded for "medium"-width screens.
+
+  The exact cutoffs are currently undecided. See Python Textual, Go Tview
+  implementations for examples.
 
 ### Internals
 
-These version numbers prefixed with `i` are tracked separately.
+i1.0
+- structs for Todo, and method (if supported by language) for `toggle()`
 
-- i1.0: structs for Todo
-- i1.1: structs and methods for both Todo and Todolist
-- i1.5: refactor input, list, and itemsleft as separate widgets with their own
-  lifecycle/update methods
-- i2.1: incremental re-renders (rather than re-drawing the entire screen on each
-  update), or an alternative performance optimization of renders
+i1.1
+- structs and methods for both Todo and Todolist (if supported by language)
+
+i1.5
+- refactor input, list, and itemsleft as separate widgets with their own
+  lifecycle/update methods (as applicable to the framework used)
+
+i2.1
+- incremental re-renders (rather than re-drawing the entire screen on each
+  update), or an alternative method of performance optimization of renders
+
+### Packaging
+
+A package definition file, e.g. `Cargo.toml`, `go.mod` is not strictly necessary
+unless the toolchain requires these files to be present to compile.
+
+- Some toolchains require package definition files to include a "version"
+  number. The spec compatibility version number as specified
+  [above](#implementations) may be used. If SemVer is required, kindly keep the
+  **patch** portion 0. For instance, `1.2` -> `1.2.0`. If the the version key is
+  used, use only the version number for functionality, and omit ones for UI,
+  internals, or other prefixed versions.
+- The author of the implementation should be the one listed in the author field,
+  if required.
+- The repository field should be set to https://github.com/hedyhli/todomvc-tui,
+  if required.
+- If the documentation field should be set to be the same as repository
+  field, if required.
+- The implementation "project" should only specify an executable. A provided
+  library should NOT be defined (for example, see `build.zig` of Zig Vaxis).
+- The package itself should NOT be published.
 
 ## Stats
 
@@ -246,8 +291,6 @@ feature versions as listed [at the top](#implementations).
 The command snippets, which are in [Nu](https://www.nushell.sh/), are provided
 as a rough overview of the commands run in the [stats script](.scripts/stat.nu)
 with the formatting code removed to get the idea across.
-
-Last updated 2024-06-10
 
 ### Code
 
