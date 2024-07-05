@@ -1,0 +1,97 @@
+###
+### A hypothetical framework that allows creating TUIs using YAML through
+### composable widgets.
+###
+
+# Define widgets using `widget <name>`
+# A single key that is the name of its base widget, with configuration
+#
+# Here we assume: paragraph, input, selectable widgets are built-in
+# Text takes a template string
+# All references with bare `.*` means `model.*`
+# `ctx.*` Comes from whatever the event handler provides
+widget: &header
+  <<: *paragraph
+  margin-top: 5
+  text: "T O D O M V C"
+
+widget: &new-todo
+  <<: *input
+  padding-h: 1
+  border: rounded
+  placeholder: What needs to be done?
+  on-enter:
+    - call model.list.add:
+        - "{ctx.text}"
+widget: &todo-list
+  <<: *selectable
+  wrap: false
+  border: rounded
+  items:
+    padding-v: 1
+    padding-h: 3
+    text: "({.complete ? 'X' : ' '}) {.name}"
+  items-in-view: 6
+  on-select:
+    - model-todo.toggle:
+        index model.list: "{ctx.index}"
+    - dec: "{.active}"
+
+widget: &items-left
+  paragraph:
+    align: right
+    text:
+      # Either use a template string, or use built-in constructs
+      # similar to SolidJS's built-in JSX components Like Match/Show
+      switch:
+        on: .active
+        options:
+          - case: 0
+            then: "all done!"
+          - case: 1
+            then: "1 item left"
+          - case: 2
+            then: "{.active} items left"
+
+
+# Define models as nested structs,
+# unless `as alias of` is used.
+#
+# All keys with spaces in them are special
+alias: &todolist
+  list of: *todo
+  methods:
+    add:
+      args:
+        - name: !!string
+      do:
+        - append:
+            # Struct instanciation
+            new todo:
+              name: name
+              complete: false
+        - inc: "{.active}"
+
+struct: &todo
+  name: string
+  complete: bool
+  methods:
+    toggle:
+      do:
+        - set:
+            .complete: "{! self.complete}"
+
+# Reference `model *`s
+struct: &model
+  list: *todolist
+  active: !!int
+
+default model:
+  list: []
+  active: 0
+
+compose:
+  - *header
+  - *new-todo
+  - *todo-list
+  - *items-left
