@@ -103,9 +103,7 @@
 
 - OCaml
 
-  - (STALLED) minttea
-    
-    waiting for 0.0.3 to be released (https://github.com/leostera/minttea/issues/54)
+  - (WIP) minttea
 
   - (WIP) lwd + nottui
 
